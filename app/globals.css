@@ -1,0 +1,17 @@
+/* styles/globals.css */
+
+@import "tailwindcss";
+/* Optional: smooth transition for theme switching */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #f7fafc; /* Tailwind's bg-gray-100 */
+  color: #1a202c; /* Tailwind's text-gray-900 */
+}
+
+.dark body {
+  background-color: #1a202c; /* Tailwind's bg-gray-900 */
+  color: #f7fafc; /* Tailwind's text-gray-100 */
+}
