@@ -117,8 +117,6 @@ export default function FeatureListTab() {
     acc[type] = filtered.filter((f) => f.type === type);
     return acc;
   }, {} as Record<string, any[]>);
-
-  // Any unknown or uncategorized types
   const knownTypes = new Set(typeOptions);
   grouped["Other"] = filtered.filter((f) => !knownTypes.has(f.type));
 

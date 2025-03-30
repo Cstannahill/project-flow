@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql" // or mysql, sqlite, etc.
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -16,7 +16,7 @@ model User {
   image         String?
   accounts      Account[] @relation("UserAccounts")
   sessions      Session[] @relation("UserSessions")
-  projects      Project[] // 👈 Add this line
+  projects      Project[]
 }
 
 model Project {
@@ -73,7 +73,7 @@ model Feature {
   title       String
   description String
   type        String
-  tags        String[] // ✅ This must be here
+  tags        String[]
   status      String?
   order       Int
   projectId   String
@@ -85,8 +85,8 @@ model Feature {
 model Diagram {
   id        String   @id @default(cuid())
   title     String
-  type      String // e.g. "flowchart", "sequence", "gantt", etc.
-  content   String // the Mermaid diagram definition
+  type      String 
+  content   String 
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
   createdAt DateTime @default(now())

@@ -8,8 +8,8 @@ export default function LogoutButton() {
   const dispatch = useAppDispatch();
 
   const handleLogout = async () => {
-    dispatch(logout()); // Clear Redux state
-    await signOut({ redirect: true, callbackUrl: "/login" }); // Sign out from NextAuth and redirect
+    dispatch(logout());
+    await signOut({ redirect: true, callbackUrl: "/login" });
   };
 
   return (

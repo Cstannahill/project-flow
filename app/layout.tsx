@@ -15,9 +15,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ClientProvider session={session}>{children}</ClientProvider>
-        </ThemeProvider>
+        <ClientProvider session={session}>{children}</ClientProvider>
       </body>
     </html>
   );

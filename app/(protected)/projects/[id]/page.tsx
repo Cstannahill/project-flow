@@ -36,20 +36,6 @@ export default function OverviewTab() {
       .then(setProject);
   }, [id]);
 
-  // useEffect(() => {
-  //   console.log("techOptions", techOptions);
-  //   Object.entries(techOptions).map(([category, tools]) =>
-  //     tools.map(
-  //       (tool) =>
-  //         (tool.iconImg = (
-  //           <span>
-  //             <Image src={tool.icon} alt={tool.tool} width={24} height={24} />
-  //           </span>
-  //         ))
-  //     )
-  //   );
-  //   console.log("techOptions", techOptions);
-  // }, []);
   if (!project) return <p>Loading...</p>;
 
   return (

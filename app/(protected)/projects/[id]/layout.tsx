@@ -1,5 +1,3 @@
-// app/projects/[id]/layout.tsx
-// "use client";
 import Link from "next/link";
 import { ReactNode } from "react";
 
@@ -17,6 +15,7 @@ export default async function ProjectLayout({
     { label: "Features", href: `/projects/${id}/features` },
     { label: "Diagrams", href: `/projects/${id}/diagrams` },
     { label: "Databases", href: `/projects/${id}/databases` },
+    { label: "API Routes", href: `/projects/${id}/apis` },
   ];
 
   return (

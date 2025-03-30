@@ -5,48 +5,50 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ projectId: string }> }
 ) {
-  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const schemas = await prisma.databaseSchema.findMany({
-    where: { projectId: id },
-    orderBy: { updatedAt: "desc" },
+  const { projectId } = await context.params;
+
+  const diagrams = await prisma.diagram.findMany({
+    where: { projectId },
+    orderBy: { createdAt: "asc" },
   });
 
-  return NextResponse.json(schemas);
+  return NextResponse.json(diagrams);
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { title, data } = await req.json();
-
-  if (!title || !data) {
+  const { id } = await context.params;
+  const { title, content, type } = await req.json();
+  const projectId = id; // Use the project ID from the URL
+  if (!title || !content || !type) {
     return NextResponse.json(
-      { error: "Missing title or data" },
+      { error: "Missing required fields" },
       { status: 400 }
     );
   }
 
-  const created = await prisma.databaseSchema.create({
+  const newDiagram = await prisma.diagram.create({
     data: {
       title,
-      projectId: id,
-      data,
+      content,
+      type,
+      projectId, // ✅ Required for the relation
     },
   });
 
-  return NextResponse.json(created);
+  return NextResponse.json(newDiagram);
 }

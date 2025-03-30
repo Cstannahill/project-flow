@@ -24,7 +24,26 @@ export type Column = {
   isUnique?: boolean;
 };
 
+export type Relationship = {
+  fromTable: string;
+  fromColumn: string;
+  toTable: string;
+  toColumn: string;
+  type: "OneToOne" | "OneToMany" | "ManyToMany";
+};
+
 export type Table = {
   name: string;
   columns: Column[];
 };
+
+export type SchemaData = {
+  tables: Table[];
+  relationships: Relationship[];
+};
+
+export type RelationshipType =
+  | "OneToOne"
+  | "OneToMany"
+  | "ManyToOne"
+  | "ManyToMany";

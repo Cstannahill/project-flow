@@ -1,7 +1,7 @@
 import { Paper } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react"; // optional icon
+import { ExternalLink } from "lucide-react";
 
 type Props = {
   item: {
@@ -21,7 +21,6 @@ export default function ProjectTechStackCard({ item }: Props) {
       elevation={3}
       className="items-center gap-4 p-4 rounded-xl shadow-sm"
     >
-      {/* <div className="flex items-center justify-center w-12 h-12 shrink-0 bg-gray-100 rounded-full"> */}
       <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center">
         <Image
           src={item.icon}
@@ -50,7 +49,6 @@ export default function ProjectTechStackCard({ item }: Props) {
           </Link>
         )}
       </div>
-      {/* </div> */}
     </Paper>
   );
 }

@@ -1,24 +1,16 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
-import { TrashIcon, PlusIcon } from "@heroicons/react/24/solid";
+import { useParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
+import { TrashIcon } from "@heroicons/react/24/solid";
+import { saveAs } from "file-saver";
+import { Canvg } from "canvg";
+
 import { generateERDiagram } from "@/lib/erDiagram";
-import { parsePrismaSchema, parseSQLSchema } from "@/lib/schemaParsers";
-
-type Column = {
-  name: string;
-  type: string;
-  isPrimary?: boolean;
-  isNullable?: boolean;
-  isUnique?: boolean;
-};
-
-type Table = {
-  name: string;
-  columns: Column[];
-};
+import { exportSchema } from "@/lib/exportSchema";
+import { parseUploadedSchema } from "@/lib/schemaParsers";
+import type { Column, Relationship, SchemaData, Table } from "@/types/base";
 
 const sqlTypes = [
   "INT",
@@ -32,20 +24,26 @@ const sqlTypes = [
   "UUID",
 ];
 
-export default function DatabaseTab({ params }) {
-  const { id: projectId } = React.use(params);
-  const router = useRouter();
+export default function DatabaseTab() {
+  const { id: projectId } = useParams();
   const diagramRef = useRef<HTMLDivElement>(null);
 
-  const [tables, setTables] = useState<Table[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [schema, setSchema] = useState<SchemaData>({
+    tables: [],
+    relationships: [],
+  });
   const [schemas, setSchemas] = useState<any[]>([]);
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {} as Record<string, boolean>
+  );
   const [dropError, setDropError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
+  const [exportFormat, setExportFormat] = useState<
+    "sql" | "prisma" | "dbml" | "json"
+  >("sql");
+  const [exportDiagramType, setExportDiagramType] = useState<"svg" | "png">(
+    "svg"
+  );
 
   useEffect(() => {
     if (!projectId) return;
@@ -56,40 +54,22 @@ export default function DatabaseTab({ params }) {
 
   useEffect(() => {
     if (diagramRef.current) {
-      const definition = generateERDiagram(tables);
+      const definition = generateERDiagram(schema);
       diagramRef.current.innerHTML = "";
       mermaid.render("er-diagram", definition).then(({ svg }) => {
         diagramRef.current!.innerHTML = svg;
       });
     }
-  }, [tables]);
 
-  const handleSaveSchema = async () => {
-    const title = prompt("Enter a title for this schema:");
-    if (!title) return;
+    setExpandedGroups(
+      Object.fromEntries(schema?.tables?.map((t) => [t.name, true]))
+    );
+  }, [schema]);
 
-    const res = await fetch(`/api/projects/${projectId}/databases`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, data: tables }),
-    });
-
-    if (res.ok) {
-      const created = await res.json();
-      setSchemas((prev) => [created, ...prev]);
-      setSelectedSchemaId(created.id);
-      alert("Schema saved!");
-    } else {
-      alert("Failed to save schema.");
-    }
-  };
-
-  const handleLoadSchema = (schemaId: string) => {
-    const schema = schemas.find((s) => s.id === schemaId);
-    if (schema) {
-      setTables(schema.data);
-      setSelectedSchemaId(schemaId);
-    }
+  const handleCollapseAll = () => {
+    setExpandedGroups((prev) =>
+      Object.fromEntries(Object.keys(prev).map((k) => [k, !prev[k]]))
+    );
   };
 
   const onFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -98,264 +78,351 @@ export default function DatabaseTab({ params }) {
     const file = e.dataTransfer.files[0];
     if (!file) return;
 
-    const text = await file.text();
     try {
-      let parsed: Table[] = [];
-
-      if (file.name.endsWith(".prisma")) {
-        parsed = parsePrismaSchema(text);
-      } else if (file.name.endsWith(".sql")) {
-        parsed = parseSQLSchema(text);
-      } else {
-        throw new Error("Unsupported file type.");
-      }
-
-      if (parsed.length === 0) throw new Error("No tables found in schema.");
-      setTables(parsed);
+      const parsed = await parseUploadedSchema(file);
+      if (parsed.tables.length === 0)
+        throw new Error("No tables found in schema.");
+      setSchema(parsed);
       alert("Schema imported successfully!");
     } catch (err: any) {
       setDropError(err.message || "Failed to parse schema.");
     }
   };
 
+  const handleSaveSchema = async () => {
+    const title = prompt("Enter a title for this schema:");
+    if (!title || !projectId) return;
+
+    const res = await fetch(`/api/projects/${projectId}/databases`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, data: schema }),
+    });
+
+    if (res.ok) {
+      const created = await res.json();
+      setSchemas((prev) => [created, ...prev]);
+      setSelectedSchemaId(created.id);
+    } else {
+      alert("Failed to save schema.");
+    }
+  };
+
+  const handleLoadSchema = (id: string) => {
+    const found = schemas.find((s) => s.id === id);
+    if (found) {
+      setSchema(found.data);
+      setSelectedSchemaId(id);
+    }
+  };
+
+  const handleExport = () => {
+    const output = exportSchema(schema, exportFormat);
+    saveAs(
+      new Blob([output], { type: "text/plain" }),
+      `schema_export.${exportFormat}`
+    );
+  };
+
+  const handleExportDiagram = async () => {
+    if (!diagramRef.current) return;
+    const svg = diagramRef.current.querySelector("svg");
+    if (!svg) return;
+
+    svg.setAttribute("style", "font-family: Arial, sans-serif;");
+    const svgString = new XMLSerializer().serializeToString(svg);
+
+    if (exportDiagramType === "svg") {
+      saveAs(new Blob([svgString], { type: "image/svg+xml" }), "diagram.svg");
+    } else {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const { width, height } = svg.getBoundingClientRect();
+      canvas.width = width;
+      canvas.height = height;
+
+      const v = await Canvg.from(ctx, svgString, {
+        ignoreDimensions: true,
+        ignoreClear: true,
+        ignoreAnimation: true,
+      });
+      await v.render();
+
+      canvas.toBlob((blob) => {
+        if (blob) saveAs(blob, "diagram.png");
+      });
+    }
+  };
+
   const addTable = () => {
-    setTables((prev) => [
+    setSchema((prev) => ({
       ...prev,
-      { name: `Table${prev.length + 1}`, columns: [] },
-    ]);
+      tables: [
+        ...prev.tables,
+        { name: `Table${prev.tables.length + 1}`, columns: [] },
+      ],
+    }));
   };
 
   const updateTable = (index: number, updated: Table) => {
-    const copy = [...tables];
-    copy[index] = updated;
-    setTables(copy);
+    const updatedTables = [...schema.tables];
+    updatedTables[index] = updated;
+    setSchema((prev) => ({ ...prev, tables: updatedTables }));
   };
 
   const addColumn = (tableIndex: number) => {
-    const table = tables[tableIndex];
-    const column: Column = {
+    const table = schema.tables[tableIndex];
+    const newCol: Column = {
       name: "",
       type: "VARCHAR",
       isPrimary: false,
       isNullable: false,
       isUnique: false,
     };
-    updateTable(tableIndex, { ...table, columns: [...table.columns, column] });
+    const updated = { ...table, columns: [...table.columns, newCol] };
+    updateTable(tableIndex, updated);
   };
-
+  const toggleGroup = (type: string) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [type]: !prev[type],
+    }));
+    console.log(expandedGroups);
+  };
   const updateColumn = (
-    tableIndex: number,
-    columnIndex: number,
+    ti: number,
+    ci: number,
     field: keyof Column,
     value: any
   ) => {
-    const table = tables[tableIndex];
-    const columns = [...table.columns];
-    columns[columnIndex] = { ...columns[columnIndex], [field]: value };
-    updateTable(tableIndex, { ...table, columns });
+    const table = schema.tables[ti];
+    const updatedCols = [...table.columns];
+    updatedCols[ci] = { ...updatedCols[ci], [field]: value };
+    updateTable(ti, { ...table, columns: updatedCols });
   };
 
-  const removeColumn = (tableIndex: number, columnIndex: number) => {
-    const table = tables[tableIndex];
-    const columns = [...table.columns];
-    columns.splice(columnIndex, 1);
-    updateTable(tableIndex, { ...table, columns });
+  const removeColumn = (ti: number, ci: number) => {
+    const table = schema.tables[ti];
+    const updatedCols = [...table.columns];
+    updatedCols.splice(ci, 1);
+    updateTable(ti, { ...table, columns: updatedCols });
   };
 
   return (
-    <div
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={onFileDrop}
-      className="space-y-6 border-2 border-dashed border-blue-300 p-4 rounded"
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-xl font-semibold">Database Schema</h2>
-        <div className="flex flex-wrap gap-4 items-center">
-          <div>
-            <label className="block text-sm font-medium mb-1">Schema</label>
+    <>
+      <div className="space-y-4 p-2">
+        {schema.tables.length > 0 && (
+          <div className="mt-0 flex gap-4 flex-row-reverse">
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as any)}
+              className="border px-2 py-1 rounded"
+            >
+              <option value="sql">SQL</option>
+              <option value="prisma">Prisma</option>
+              <option value="dbml">DBML</option>
+              <option value="json">JSON</option>
+            </select>
+            <button
+              onClick={handleExport}
+              className="bg-blue-500 text-white px-4 py-1 rounded"
+            >
+              Export Schema
+            </button>
+            <select
+              value={exportDiagramType}
+              onChange={(e) => setExportDiagramType(e.target.value as any)}
+              className="border px-2 py-1 rounded"
+            >
+              <option value="svg">SVG</option>
+              <option value="png">PNG</option>
+            </select>
+            <button
+              onClick={handleExportDiagram}
+              className="bg-indigo-600 text-white px-4 py-1 rounded"
+            >
+              Export Diagram
+            </button>
+            <button className="ct-btn bg-gray-400" onClick={handleCollapseAll}>
+              {expandedGroups ? "Collapse All" : "Expand All"}
+            </button>
+          </div>
+        )}
+        <div
+          className="flex justify-between items-center flex-wrap gap-4 border-2 border-dashed border-blue-300 rounded p-5"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onFileDrop}
+        >
+          <h2 className="text-xl font-semibold">Database Schema</h2>
+          <small className="text-gray-500">
+            Drag a file to upload {`(.sql, .prisma, .dbml, .json)`}
+          </small>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleSaveSchema}
+              className="bg-green-600 text-white px-3 py-1 rounded"
+            >
+              💾 Save
+            </button>
+            <button
+              onClick={addTable}
+              className="bg-blue-600 text-white px-3 py-1 rounded"
+            >
+              ➕ Add Table
+            </button>
             <select
               value={selectedSchemaId || ""}
               onChange={(e) => handleLoadSchema(e.target.value)}
-              className="bg-white dark:bg-neutral-900 border px-2 py-1 rounded"
+              className="border px-2 py-1 rounded"
             >
-              <option value="">— Select saved schema —</option>
-              {schemas.map((schema) => (
-                <option key={schema.id} value={schema.id}>
-                  {schema.title}
+              <option value="">— Load Schema —</option>
+              {schemas.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
                 </option>
               ))}
             </select>
           </div>
-          <button
-            onClick={handleSaveSchema}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            💾 Save Schema
-          </button>
-          <button
-            onClick={addTable}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            ➕ Add Table
-          </button>
         </div>
-      </div>
-      <div className="mt-4">
-        <label className="block text-sm font-medium mb-1">
-          Import schema file (.prisma or .sql)
-        </label>
-        <input
-          type="file"
-          accept=".sql,.prisma"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
 
-            const text = await file.text();
-            try {
-              let parsed: Table[] = [];
+        {dropError && <p className="text-red-600">{dropError}</p>}
 
-              if (file.name.endsWith(".prisma")) {
-                parsed = parsePrismaSchema(text);
-              } else if (file.name.endsWith(".sql")) {
-                parsed = parseSQLSchema(text);
-              } else {
-                throw new Error("Unsupported file type.");
-              }
-
-              if (parsed.length === 0)
-                throw new Error("No tables found in schema.");
-              setTables(parsed);
-              alert("Schema imported successfully!");
-            } catch (err: any) {
-              setDropError(err.message || "Failed to parse schema.");
-            }
-          }}
-          className="border p-2 rounded bg-white dark:bg-neutral-800"
-        />
-      </div>
-
-      {dropError && <p className="text-red-600">{dropError}</p>}
-
-      {loading ? (
-        <p>Loading database schema...</p>
-      ) : tables.length === 0 ? (
-        <p className="text-gray-500 italic">No tables defined yet.</p>
-      ) : (
-        <div className="space-y-6">
-          {tables.map((table, i) => (
+        <div className="space-y-4">
+          {schema.tables.map((table, ti) => (
             <div
-              key={i}
-              className="border rounded-lg p-4 bg-white dark:bg-neutral-900 shadow-sm"
+              key={table.name}
+              className="border p-4 rounded bg-white dark:bg-neutral-900"
             >
-              <input
-                type="text"
-                value={table.name}
-                onChange={(e) =>
-                  updateTable(i, { ...table, name: e.target.value })
-                }
-                placeholder="Table name"
-                className="text-lg font-semibold border-b bg-transparent w-full mb-3"
-              />
-
-              <table className="w-full text-sm table-auto">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th>Column</th>
-                    <th>Type</th>
-                    <th>Primary</th>
-                    <th>Nullable</th>
-                    <th>Unique</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {table.columns.map((col, j) => (
-                    <tr key={j} className="border-t">
-                      <td>
-                        <input
-                          value={col.name}
-                          onChange={(e) =>
-                            updateColumn(i, j, "name", e.target.value)
-                          }
-                          className="w-full bg-transparent border rounded px-2 py-1"
-                        />
-                      </td>
-                      <td>
-                        <select
-                          value={col.type}
-                          onChange={(e) =>
-                            updateColumn(i, j, "type", e.target.value)
-                          }
-                          className="w-full bg-transparent border rounded px-2 py-1"
-                        >
-                          {sqlTypes.map((t) => (
-                            <option key={t}>{t}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="text-center">
-                        <input
-                          type="checkbox"
-                          checked={col.isPrimary}
-                          onChange={(e) =>
-                            updateColumn(i, j, "isPrimary", e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="text-center">
-                        <input
-                          type="checkbox"
-                          checked={col.isNullable}
-                          onChange={(e) =>
-                            updateColumn(i, j, "isNullable", e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="text-center">
-                        <input
-                          type="checkbox"
-                          checked={col.isUnique}
-                          onChange={(e) =>
-                            updateColumn(i, j, "isUnique", e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="text-center">
-                        <button
-                          onClick={() => removeColumn(i, j)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <TrashIcon className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="pt-2 text-right">
-                <button
-                  onClick={() => addColumn(i)}
-                  className="text-sm text-blue-600 hover:underline"
+              <div className="flex flex-inline gap-3">
+                <input
+                  type="text"
+                  value={table.name}
+                  onChange={(e) =>
+                    updateTable(ti, { ...table, name: e.target.value })
+                  }
+                  placeholder="Table name"
+                  className="font-semibold border-b w-full bg-transparent mb-3 flex-shrink"
+                />
+                <p
+                  className="px-3 cursor-pointer font-bold text-lg"
+                  onClick={() => toggleGroup(table.name)}
                 >
-                  + Add Column
-                </button>
+                  {expandedGroups[table.name] !== false ? "▾" : "▸"}
+                </p>
               </div>
+              {expandedGroups[table.name] !== false && (
+                <table className="w-full text-sm table-auto">
+                  <thead>
+                    <tr className="text-left border-b">
+                      <th>Column</th>
+                      <th>Type</th>
+                      <th>PK</th>
+                      <th>NULL</th>
+                      <th>UK</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {table.columns.map((col, ci) => (
+                      <tr key={ci} className="border-t">
+                        <td>
+                          <input
+                            value={col.name}
+                            onChange={(e) =>
+                              updateColumn(ti, ci, "name", e.target.value)
+                            }
+                            className="w-full border px-2 py-1 rounded"
+                          />
+                        </td>
+                        <td>
+                          <select
+                            value={col.type}
+                            onChange={(e) =>
+                              updateColumn(ti, ci, "type", e.target.value)
+                            }
+                            className="w-full border px-2 py-1 rounded"
+                          >
+                            {sqlTypes.map((t) => (
+                              <option key={t}>{t}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={col.isPrimary}
+                            onChange={(e) =>
+                              updateColumn(
+                                ti,
+                                ci,
+                                "isPrimary",
+                                e.target.checked
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={col.isNullable}
+                            onChange={(e) =>
+                              updateColumn(
+                                ti,
+                                ci,
+                                "isNullable",
+                                e.target.checked
+                              )
+                            }
+                          />
+                        </td>
+                        <td className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={col.isUnique}
+                            onChange={(e) =>
+                              updateColumn(ti, ci, "isUnique", e.target.checked)
+                            }
+                          />
+                        </td>
+                        <td className="text-center">
+                          <button
+                            onClick={() => removeColumn(ti, ci)}
+                            className="text-red-600"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {expandedGroups[table.name] !== false && (
+                <div className="pt-2 text-right">
+                  <button
+                    onClick={() => addColumn(ti)}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    + Add Column
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
-      )}
 
-      {tables.length > 0 && (
-        <div className="mt-10 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-2">📊 ER Diagram Preview</h3>
-          <div
-            ref={diagramRef}
-            className="bg-white dark:bg-neutral-900 border p-4 rounded-md overflow-auto"
-          />
-        </div>
-      )}
-    </div>
+        {schema.tables.length > 0 && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-2">📊 ER Diagram</h3>
+            <div
+              ref={diagramRef}
+              className="border rounded p-4 bg-white dark:bg-neutral-900 overflow-auto"
+            />
+          </div>
+        )}
+      </div>
+    </>
   );
 }

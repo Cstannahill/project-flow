@@ -1,6 +1,5 @@
-// app/api/projects/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma"; // assumes you have prisma.ts singleton
+import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 

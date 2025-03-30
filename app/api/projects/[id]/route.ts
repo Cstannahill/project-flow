@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { params } = context;
   const { id } = await params;
@@ -26,7 +26,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { params } = await context;
   const { id } = await params;
@@ -56,7 +56,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const { params } = context;
   const { id } = await params;

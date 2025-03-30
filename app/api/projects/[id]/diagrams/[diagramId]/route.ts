@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { projectId: string; diagramId: string } }
+  context: { params: Promise<{ projectId: string; diagramId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -27,7 +27,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { projectId: string; diagramId: string } }
+  context: { params: Promise<{ projectId: string; diagramId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -51,7 +51,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  context: { params: { projectId: string; diagramId: string } }
+  context: { params: Promise<{ projectId: string; diagramId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {

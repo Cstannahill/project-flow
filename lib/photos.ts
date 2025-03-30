@@ -43,7 +43,7 @@ const photos = [
   const width = Number.parseInt(matcher[2], 10);
   const height = Number.parseInt(matcher[3], 10);
   const extension = matcher[4];
-  // let style = { width: "25vw", height: "auto" };
+
   let newwidth = width;
   let newheight = height;
   if (width < 1000) {
@@ -55,12 +55,6 @@ const photos = [
     width: newwidth,
     height: newheight,
 
-    // style: { style },
-    // srcSet: breakpoints.map((breakpoint) => ({
-    //   src: imageLink(path, width, height, breakpoint, extension),
-    //   width: breakpoint,
-    //   height: Math.round((height / width) * breakpoint),
-    // })),
     ...rest,
   } as Photo;
 });

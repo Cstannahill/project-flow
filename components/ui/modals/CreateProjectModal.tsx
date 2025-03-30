@@ -1,4 +1,3 @@
-// components/CreateProjectModal.tsx
 "use client";
 
 import { useState } from "react";
@@ -35,7 +34,7 @@ export default function CreateProjectModal({ onClose, onSave }: Props) {
       }
 
       if (data) {
-        onSave(data); // this should match your modal prop signature
+        onSave(data);
       }
     } catch (err) {
       console.error("Create project error:", err);

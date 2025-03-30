@@ -33,7 +33,7 @@ export async function POST(
 
   const { id } = await context.params;
   const { title, content, type } = await req.json();
-  const projectId = id; // Use the project ID from the URL
+  const projectId = id;
   if (!title || !content || !type) {
     return NextResponse.json(
       { error: "Missing required fields" },
@@ -46,7 +46,7 @@ export async function POST(
       title,
       content,
       type,
-      projectId, // ✅ Required for the relation
+      projectId,
     },
   });
 

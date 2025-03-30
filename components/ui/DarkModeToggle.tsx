@@ -1,4 +1,3 @@
-// components/DarkModeToggle.tsx
 "use client";
 import { useEffect, useState } from "react";
 
@@ -19,28 +18,3 @@ export default function ThemeToggle() {
     </select>
   );
 }
-
-// export default function DarkModeToggle() {
-//   const [darkMode, setDarkMode] = useState(false);
-
-//   useEffect(() => {
-//     // Check if dark mode was previously enabled
-//     const isDark = localStorage.getItem("theme") === "dark";
-//     document.documentElement.classList.toggle("dark", isDark);
-//   }, []);
-
-//   const toggleDarkMode = () => {
-//     const newMode = !darkMode;
-//     setDarkMode(newMode);
-//     localStorage.setItem("theme", newMode ? "dark" : "light");
-//     document.documentElement.classList.toggle("dark", newMode);
-//   };
-
-//   return (
-//     <button
-//       onClick={toggleDarkMode}
-//       className="p-2 rounded btn border text-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-//     >
-//       {darkMode ? "☀️" : "🌙"}
-//     </button>
-//   );
