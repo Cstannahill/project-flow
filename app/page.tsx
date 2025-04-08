@@ -36,9 +36,9 @@ export default function LandingPage() {
 
         <div className="mt-8">
           <p className="text-gray-600 dark:text-gray-400">
-            Whether you're working solo or with a team, Project Planner helps
+            {`Whether you're working solo or with a team, Project Planner helps
             you bring structure and clarity to your app ideas before you ever
-            write a line of code.
+            write a line of code.`}
           </p>
         </div>
 

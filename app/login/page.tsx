@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/store/hooks";
 import { login } from "@/lib/store/userSlice";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -77,9 +78,11 @@ export default function LoginPage() {
               onClick={() => signIn("google")}
               className="flex font-bold items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full"
             >
-              <img
+              <Image
                 src="/icons/googlew.svg"
                 alt="Google"
+                height={12}
+                width={10}
                 className="w-10 h-10"
               />
               <span className="text-black">Google</span>
@@ -89,9 +92,11 @@ export default function LoginPage() {
               onClick={() => signIn("github")}
               className="flex font-bold items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full"
             >
-              <img
+              <Image
                 src="/icons/githubs.svg"
                 alt="GitHub"
+                height={12}
+                width={10}
                 className="w-10 h-12"
               />
               <span className="text-black">Github</span>
@@ -101,9 +106,11 @@ export default function LoginPage() {
               onClick={() => signIn("twitter")}
               className="flex font-bold items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full"
             >
-              <img
+              <Image
                 src="/icons/twitter.svg"
                 alt="Twitter"
+                height={12}
+                width={10}
                 className="w-10 h-12"
               />
               <span className="text-black">Twitter</span>

@@ -73,13 +73,19 @@ export const techOptions: Record<
       tool: "Go (Fiber)",
       language: "Go",
       docs: "https://docs.gofiber.io",
-      icon: "/icons/go.svg",
+      icon: "/icons/go.png",
     },
     {
       tool: "Ruby on Rails",
       language: "Ruby",
       docs: "https://rubyonrails.org",
       icon: "/icons/rails.svg",
+    },
+    {
+      tool: ".NET",
+      language: "C#",
+      docs: "https://learn.microsoft.com/en-us/dotnet/core/introduction",
+      icon: "/icons/dotnet.svg",
     },
   ],
   database: [

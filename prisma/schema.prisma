@@ -7,6 +7,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum HttpMethod {
+  GET
+  POST
+  PUT
+  PATCH
+  DELETE
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -28,10 +36,13 @@ model Project {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  userId   String
-  user     User      @relation(fields: [userId], references: [id])
-  features Feature[]
-  schemas     DatabaseSchema[]
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  features  Feature[]
+  schemas   DatabaseSchema[]
+  apiRoutes ApiRoute[]
+  ApiSpec   ApiSpec[]
+  openapiSpec  Json?
 }
 
 model Account {
@@ -85,8 +96,8 @@ model Feature {
 model Diagram {
   id        String   @id @default(cuid())
   title     String
-  type      String 
-  content   String 
+  type      String
+  content   String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
   createdAt DateTime @default(now())
@@ -101,4 +112,32 @@ model DatabaseSchema {
   data      Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ApiRoute {
+  id          String   @id @default(cuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  method      HttpMethod
+  path        String
+  summary     String
+  description String
+  params      Json?
+  query       Json?
+  body        Json?
+  responses   Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ApiSpec {
+  id          String   @id @default(cuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  title       String
+  description String?
+  version     String   @default("1.0.0")
+  spec        Json // Full OpenAPI JSON spec
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

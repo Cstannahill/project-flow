@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { featureId: string } }
+  { params }: { params: Promise<{ featureId: string }> }
 ) {
   const { featureId } = await params;
   const session = await getServerSession(authOptions);
@@ -42,7 +42,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { featureId: string } }
+  { params }: { params: Promise<{ featureId: string }> }
 ) {
   const { featureId } = await params;
   const session = await getServerSession(authOptions);

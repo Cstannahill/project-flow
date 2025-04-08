@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -93,7 +94,11 @@ export default function SignupPage() {
             onClick={() => signIn("google")}
             className="flex font-bold items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-500 transition-colors w-full"
           >
-            <img src="/icons/googlew.svg" alt="Google" className="w-10 h-10" />
+            <Image
+              src="/icons/googlew.svg"
+              alt="Google"
+              className="w-10 h-10"
+            />
             Google
           </button>
           <button
@@ -101,7 +106,11 @@ export default function SignupPage() {
             onClick={() => signIn("github")}
             className="flex font-bold items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-500 transition-colors w-full"
           >
-            <img src="/icons/githubs.svg" alt="GitHub" className="w-10 h-12" />
+            <Image
+              src="/icons/githubs.svg"
+              alt="GitHub"
+              className="w-10 h-12"
+            />
             GitHub
           </button>
         </div>

@@ -23,3 +23,8 @@ body {
 option {
   color: #1a202c;
 }
+
+.swagger-ui td,
+p {
+  color: rgb(220, 217, 215) !important;
+}

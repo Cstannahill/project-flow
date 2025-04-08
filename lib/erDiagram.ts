@@ -10,7 +10,7 @@ export function generateERDiagram({
     diagram += `  ${table.name} {\n`;
 
     for (const col of table.columns) {
-      let flags = [];
+      const flags = [];
 
       if (col.isPrimary) flags.push("PK");
       if (col.isUnique) flags.push("UK");
