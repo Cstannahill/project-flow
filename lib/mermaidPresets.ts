@@ -47,4 +47,20 @@ export const diagramTypes = [
   Feature X   :active, 2024-01-04, 5d
   QA          :2024-01-10, 3d`,
   },
+  {
+    label: "Architecture",
+    value: "architecture-beta",
+    snippet: `architecture-beta
+    group api(cloud)[API]
+
+    service db(database)[Database] in api
+    service disk1(disk)[Storage] in api
+    service disk2(disk)[Storage] in api
+    service server(server)[Server] in api
+
+    db:L -- R:server
+    disk1:T -- B:server
+    disk2:T -- B:db
+    `,
+  },
 ];

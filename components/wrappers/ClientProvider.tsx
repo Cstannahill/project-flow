@@ -1,44 +1,50 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { use, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Provider } from "react-redux";
-import { useAppDispatch } from "@/lib/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import { store } from "@/lib/store/store";
 import { login } from "@/lib/store/userSlice";
-import Navbar from "../ui/Navbar";
+import NavbarWrapper from "@/components/ui/NavbarWrapper";
 import { useTheme } from "next-themes";
-import {
-  createTheme,
-  ThemeProvider as MuiThemeProvider,
-} from "@mui/material/styles";
-import { ThemeProvider as NextThemeProvider } from "next-themes";
-
-const lightTheme = createTheme({ palette: { mode: "light" } });
-const darkTheme = createTheme({ palette: { mode: "dark" } });
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { usePathname } from "next/navigation";
+import NavigationWrapper from "./NavigationWrapper";
+import { hydrateUserSession } from "@/lib/store/userThunks";
+import { setCurrentProject } from "@/lib/store/projectThunks";
 
 function AuthSync({ session }: { session: any }) {
   const dispatch = useAppDispatch();
+  const userProj = useAppSelector(
+    (state) => state?.user?.currentUser?.selectedProjectId
+  );
+  useEffect(() => {
+    dispatch(hydrateUserSession(session));
+  }, [session, dispatch]);
 
   useEffect(() => {
-    if (session?.user) {
-      dispatch(
-        login({
-          name: session.user.name || "",
-          email: session.user.email || "",
-        })
-      );
+    if (session) {
+      // dispatch(setCurrentProject(userProj));
     }
-  }, [session, dispatch]);
+  }, [userProj, session, dispatch]);
 
   return null;
 }
 
-function MuiSyncThemeWrapper({ children }: { children: React.ReactNode }) {
+function NextThemeProviderWrapper({ children }: { children: React.ReactNode }) {
   const { resolvedTheme } = useTheme();
-  const theme = resolvedTheme === "dark" ? darkTheme : lightTheme;
 
-  return <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>;
+  return (
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      {children}
+    </NextThemesProvider>
+  );
 }
 
 export default function ClientProvider({
@@ -48,15 +54,20 @@ export default function ClientProvider({
   children: React.ReactNode;
   session: any;
 }) {
+  const { resolvedTheme } = useTheme();
+  const pathname = usePathname();
+
+  const isSidebarRoute =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/projects");
+
   return (
-    <NextThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <MuiSyncThemeWrapper>
-        <Provider store={store}>
-          <AuthSync session={session} />
-          <Navbar layout="top" />
+    <NextThemeProviderWrapper>
+      <Provider store={store}>
+        <AuthSync session={session} />
+        <NavigationWrapper>
           <SessionProvider session={session}>{children}</SessionProvider>
-        </Provider>
-      </MuiSyncThemeWrapper>
-    </NextThemeProvider>
+        </NavigationWrapper>
+      </Provider>
+    </NextThemeProviderWrapper>
   );
 }

@@ -35,7 +35,7 @@ const typeOptions = [
 const statusOptions = ["Planned", "In Progress", "Complete"];
 
 export default function FeatureListTab() {
-  const { id: projectId } = useParams();
+  const { projectId } = useParams();
   const [features, setFeatures] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingOrder, setSavingOrder] = useState(false);

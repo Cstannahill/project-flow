@@ -18,7 +18,7 @@ export default function DiagramModal({ content, onClose, title }: Props) {
   useEffect(() => {
     const renderDiagram = async () => {
       try {
-        mermaid.initialize({ startOnLoad: false, theme: "default" });
+        mermaid.initialize({ startOnLoad: false, theme: "dark" });
         const { svg } = await mermaid.render(`diagram-${Date.now()}`, content);
         setSvgHtml(svg);
         setError("");

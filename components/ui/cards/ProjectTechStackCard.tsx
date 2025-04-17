@@ -2,6 +2,7 @@ import { Paper } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import FloatingCard from "./FloatingCard";
 
 type Props = {
   item: {
@@ -16,10 +17,9 @@ type Props = {
 
 export default function ProjectTechStackCard({ item }: Props) {
   return (
-    <Paper
-      variant="outlined"
-      elevation={3}
-      className="items-center gap-4 p-4 rounded-xl shadow-sm"
+    <FloatingCard
+      className="flex flex-row gap-4 p-4 items-start dark:bg-stone-800 dark:text-white bg-white text-gray-900 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 ease-in-out"
+      shadow="elevated"
     >
       <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center">
         <Image
@@ -49,6 +49,6 @@ export default function ProjectTechStackCard({ item }: Props) {
           </Link>
         )}
       </div>
-    </Paper>
+    </FloatingCard>
   );
 }

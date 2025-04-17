@@ -50,7 +50,7 @@ export type RelationshipType =
 
 export type ProjectLayoutProps = {
   children: ReactNode;
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string }>;
 };
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -86,3 +86,15 @@ export type ApiRoutePayload = {
   body?: Record<string, any>;
   responses?: Record<string, any>;
 };
+export interface ProjectProps {
+  id: string;
+  name: string;
+  title: string;
+  description?: string;
+  techStack?: Record<string, string>;
+  schema?: SchemaData;
+  apiRoutes?: ApiRoute[];
+  selectProjectHandler: (id: string) => void;
+  createdAt: Date;
+  updatedAt: Date;
+}
