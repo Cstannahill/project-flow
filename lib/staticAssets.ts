@@ -49,6 +49,7 @@ export const techOptions: Record<
       docs: "https://angular.io",
       icon: "/icons/angular.svg",
     },
+    { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
   backend: [
     {
@@ -87,6 +88,7 @@ export const techOptions: Record<
       docs: "https://learn.microsoft.com/en-us/dotnet/core/introduction",
       icon: "/icons/dotnet.svg",
     },
+    { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
   database: [
     {
@@ -119,6 +121,7 @@ export const techOptions: Record<
       docs: "https://sqlite.org/docs.html",
       icon: "/icons/sqlite.svg",
     },
+    { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
   css: [
     {
@@ -205,6 +208,7 @@ export const techOptions: Record<
       docs: "https://devcenter.heroku.com",
       icon: "/icons/heroku.svg",
     },
+    { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
   api: [
     {
@@ -231,6 +235,7 @@ export const techOptions: Record<
       docs: "https://en.wikipedia.org/wiki/Remote_procedure_call",
       icon: "/icons/rpc.png",
     },
+    { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
   state: [
     {

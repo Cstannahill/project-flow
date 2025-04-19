@@ -60,7 +60,7 @@ export default function LoginPage() {
             Sign in
           </button>
 
-          <div className="my-6 flex inline-flex">
+          <div className="my-6  inline-flex">
             <div className="inset-0 flex items-center">
               <div className="w-34 border-t border-gray-300 z-10"></div>
               <div className="relative flex justify-center text-sm">

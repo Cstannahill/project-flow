@@ -1,149 +1,204 @@
 "use client";
 
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import Link from "next/link";
+import React, { ReactNode, useState } from "react";
 import clsx from "clsx";
-import { usePathname } from "next/navigation";
-import DarkModeToggle from "./DarkModeToggle";
-import { useAppSelector } from "@/lib/store/hooks";
+import NavItem from "./NavItem";
+import { Divider } from "@/components/ui/Divider";
+import BrandHeader from "@/components/BrandHeader";
+import Image from "next/image";
 import LogoutButton from "../LogoutButton";
-type NavbarProps = {
-  layout?: "top" | "side";
-};
+import { store } from "@/lib/store/store";
+import { ThemeChanger } from "../ThemeChanger";
 
-export default function Navbar({ layout = "top" }: NavbarProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const pathname = usePathname();
-  const user = useAppSelector((state) => state.user.currentUser);
-  const navItemsNoUser = [
-    { label: "Home", href: "/" },
-    { label: "Login", href: "/login" },
-    { label: "Signup", href: "/signup" },
-  ];
+type LayoutMode = "top" | "side" | "both";
 
-  const navItemsUser = [
-    { label: "Home", href: "/" },
-    { label: "Dashboard", href: "/dashboard" },
-  ];
+interface NavbarProps {
+  brand?: ReactNode;
+  menuItems: { label: string; href: string }[];
+  layout?: LayoutMode;
+  cta?: ReactNode;
+  className?: string;
+}
 
-  const isTop = layout === "top";
-
+/**
+ * Navbar
+ * ---------------------
+ * A responsive navigation bar with top, side, or hybrid layout modes.
+ *
+ * ✅ Use for:
+ * - Application shell or site-wide navigation
+ * - Header + side menu combo layouts
+ * - Full-brand nav with optional CTA
+ *
+ * 🧠 Design Notes:
+ * - Supports layout mode: 'top', 'side', or 'both'
+ * - Mobile menu toggle built-in
+ * - Fully composable with `NavItem`, `CTAButton`, logo slot, etc.
+ *
+ * 🛠️ Props:
+ * - brand?: ReactNode — left logo or brand slot
+ * - menuItems: { label: string; href: string }[] — nav links
+ * - layout?: 'top' | 'side' | 'both' (default: 'top')
+ * - cta?: ReactNode — optional call-to-action button
+ * - className?: string — wrapper styling
+ *
+ * 🚀 Example Usage:
+ * <Navbar
+ *   brand={<Logo />}
+ *   menuItems={[{ label: 'Docs', href: '/docs' }]}
+ *   layout="top"
+ *   cta={<CTAButton>Get Started</CTAButton>}
+ * />
+ */
+const getIcon = () => {
   return (
-    <nav
-      className={clsx(
-        "z-10 backdrop-blur-md transition-all duration-300",
-        "bg-white/70 dark:bg-gray-900/70 shadow-md",
-        isTop
-          ? "sticky top-0 left-0 h-auto w-full"
-          : "fixed top-0 left-0 h-full w-64 border-r border-gray-200 dark:border-gray-700"
-      )}
-    >
-      <div
-        className={clsx(
-          "flex items-center justify-between",
-          isTop ? "px-6 py-4" : "flex-col h-full px-4 py-6"
-        )}
-      >
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <span className="font-bold">
-            {" "}
-            Project Flow:{"   "}
-            <span className="text-sm font-bold">{user?.name || "Unknown"}</span>
-          </span>
-        </div>
+    <>
+      <Image
+        src="/icons/shadyt-logo.png"
+        alt="Logo"
+        width={170}
+        height={170}
+        className="rounded-2xl border border-slate-300/50 shadow-sm shadow-slate-300/80 p-1"
+      />
+    </>
+  );
+};
+const brandIcon = getIcon();
+export default function Navbar({
+  brand,
+  menuItems,
+  layout = "top",
+  cta,
+  className,
+}: NavbarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-        {/* Mobile Toggle */}
-        {isTop && (
-          <button
-            className="md:hidden p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition"
-            onClick={() => setIsOpen((prev) => !prev)}
-            aria-label="Toggle Menu"
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        )}
+  const isTop = layout === "top" || layout === "both";
+  const isSide = layout === "side" || layout === "both";
 
-        {/* Nav Items */}
-        <ul
+  const toggleMobile = () => setMobileOpen((prev) => !prev);
+  const linkCount = menuItems.length;
+  const mapNavItems = (
+    menuItem: { label: string; href: string },
+    index: number
+  ) => {
+    return (
+      <NavItem
+        key={menuItem.href + layout + index + menuItem.label}
+        exact={true}
+        href={menuItem.href}
+        layout={layout}
+        index={index}
+        label={menuItem.label}
+      />
+    );
+  };
+
+  const mapSideNavItems = (
+    menuItem: { label: string; href: string },
+    index: number
+  ) => {
+    if (index === 0) {
+      return (
+        <React.Fragment key={menuItem.href + menuItem.label + index}>
+          <Divider
+            spacing={1}
+            key={menuItem.href + menuItem.label + index}
+            className="my-0"
+          />
+          <NavItem
+            key={menuItem.href + layout + index + menuItem.label}
+            href={menuItem.href}
+            exact={true}
+            layout={layout}
+            index={index}
+            label={menuItem.label}
+          />
+          <Divider
+            spacing={1}
+            key={menuItem.href + "divivder" + menuItem.label + index}
+            className="my-0"
+          />
+        </React.Fragment>
+      );
+    } else {
+      return (
+        <React.Fragment key={menuItem.href + menuItem.label + index}>
+          <NavItem
+            href={menuItem.href}
+            exact={true}
+            layout={layout}
+            index={index}
+            label={menuItem.label}
+          />
+          <Divider
+            spacing={1}
+            key={menuItem.href + "divivder" + menuItem.label + index}
+            className="my-0"
+          />
+        </React.Fragment>
+      );
+    }
+  };
+  return (
+    <>
+      {/* Top Navigation */}
+      {isTop && (
+        <header
           className={clsx(
-            "text-sm font-medium",
-            isTop
-              ? "hidden md:flex gap-6 text-gray-800 dark:text-gray-100 items-center"
-              : "flex flex-col-reverse gap-4 mb-auto mt-4 w-full items-center text-gray-800 dark:text-gray-100"
+            "w-full flex  items-center justify-between px-4 py-3 bg-brand-dark text-white shadow-md",
+            className
           )}
         >
-          {/* {user && user?.name != null && <LogoutButton />} */}
-          {user && user?.name != null
-            ? navItemsUser.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={clsx(
-                        "transition-colors px-2 py-1 rounded",
-                        isActive
-                          ? "text-blue-600 dark:text-blue-400 font-semibold"
-                          : "hover:text-blue-600 dark:hover:text-blue-400"
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })
-            : navItemsNoUser.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={clsx(
-                        "transition-colors px-2 py-1 rounded",
-                        isActive
-                          ? "text-blue-600 dark:text-blue-400 font-semibold"
-                          : "hover:text-blue-600 dark:hover:text-blue-400"
-                      )}
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-          {user && user?.name != null && (
-            <li>
-              <LogoutButton />
-            </li>
-          )}
-          <DarkModeToggle />
-        </ul>
-      </div>
+          <div className="flex items-center gap-4">
+            {brand && <div className="text-lg font-bold">{brand}</div>}
+          </div>
 
-      {/* Mobile Menu (only top layout) */}
-      {isTop && isOpen && (
-        <ul className="md:hidden px-6 pb-4 flex flex-col gap-4 text-sm font-medium text-gray-800 dark:text-gray-100">
-          {navItemsUser.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={clsx(
-                    "transition-colors px-2 py-1 rounded block",
-                    isActive
-                      ? "text-blue-600 dark:text-blue-400 font-semibold"
-                      : "hover:text-blue-600 dark:hover:text-blue-400"
-                  )}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+          <nav className="hidden md:flex items-center gap-6">
+            {menuItems.map(mapNavItems)}
+          </nav>
+
+          <div className="hidden md:flex items-center gap-2">{cta}</div>
+
+          {/* Mobile Toggle */}
+          <button
+            onClick={toggleMobile}
+            className="md:hidden text-white focus:outline-none"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? "✖" : "☰"}
+          </button>
+        </header>
       )}
-    </nav>
+
+      {/* Side Drawer */}
+      {isSide && (
+        <aside
+          className="bg-gradient-to-b from-[#0f172a] to-[#1e293b]
+ text-white w-full  rounded-xl"
+        >
+          <BrandHeader
+            icon={brandIcon}
+            brandName="shadyt-ui"
+            subtitle="ai, ui, db, api"
+            className="mb-6 w-full"
+          />
+          <nav className="flex flex-col gap-4 ">
+            {menuItems.map(mapSideNavItems)}
+            <div className="flex flex-col gap-4 mt-4">
+              <LogoutButton />
+              <Divider spacing={1} className="my-0" />
+              <button
+                className="text-center ct-btn btn btn-md bg-linear-to-r from-cyan-100 via-blue-300 to-indigo-400 text-sm text-gray-800 hover:text-gray-500"
+                onClick={() => console.log(store.getState())}
+              >
+                State
+              </button>
+              <ThemeChanger />
+            </div>
+          </nav>
+        </aside>
+      )}
+    </>
   );
 }

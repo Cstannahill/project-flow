@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { store } from "@/lib/store/store";
+import { fetchProjects } from "@/lib/store/projectThunks";
+import { setSelectedProjectId } from "@/lib/store/userSlice";
+// import { setUserProject } from "@/lib/store/userThunks";
+import { RootState } from "@/lib/store/store";
 import { useRouter } from "next/navigation";
 import CreateProjectModal from "@/components/ui/modals/CreateProjectModal";
+import { ProjectComponent } from "@/components/ProjectComponent";
 
 type Project = {
   id: string;
@@ -11,29 +19,47 @@ type Project = {
 };
 
 export default function DashboardPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [localPrState, setLocalPState] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { projects, loading } = useAppSelector((state) => state.project);
+  // const { user } = useAppSelector((state) => state.user);
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      const res = await fetch("/api/projects");
-      const data = await res.json();
-      setProjects(data);
-      setLoading(false);
-    };
-
-    fetchProjects();
-  }, []);
-
+    // For example, only fetch if we have 0 projects
+    if (!projects.length && !loading) {
+      dispatch(fetchProjects());
+    }
+  }, [dispatch, projects, loading]);
+  const handleSelectProject = (id: string) => {
+    dispatch(setSelectedProjectId(id));
+    // dispatch();
+    router.push(`/projects/${id}`);
+  };
   const handleNewProject = () => {
     setShowModal(true);
   };
 
   const handleSaveProject = (newProject: Project) => {
-    setProjects([newProject, ...projects]);
     setShowModal(false);
+  };
+
+  const mapProject = (project: any) => {
+    return (
+      <React.Fragment key={project.id}>
+        <ProjectComponent
+          key={project.id}
+          id={project.id}
+          name={project.name}
+          createdAt={project.createdAt}
+          updatedAt={project.updatedAt}
+          title={project.title}
+          description={project.description}
+          selectProjectHandler={handleSelectProject}
+        />
+      </React.Fragment>
+    );
   };
 
   return (
@@ -64,16 +90,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              onClick={() => router.push(`/projects/${project.id}`)}
-              className="border rounded-lg p-5 shadow hover:shadow-md transition cursor-pointer"
-            >
-              <h2 className="text-xl font-semibold">{project.title}</h2>
-              <p className="mt-2 text-sm opacity-80">{project.description}</p>
-            </div>
-          ))}
+          {projects.map(mapProject)}
         </div>
       )}
 

@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/auth/auth";
 import ClientProvider from "../components/wrappers/ClientProvider";
-import { ThemeProvider } from "next-themes";
 
 import "../app/globals.css";
 
@@ -13,7 +12,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <ClientProvider session={session}>{children}</ClientProvider>
       </body>

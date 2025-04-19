@@ -12,7 +12,7 @@ export default function DiagramsTab() {
   `;
 
   useEffect(() => {
-    mermaid.initialize({ startOnLoad: true });
+    mermaid.initialize({ startOnLoad: true, theme: "dark" });
     mermaid.contentLoaded();
   }, [chart]);
 

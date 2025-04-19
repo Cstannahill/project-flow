@@ -76,7 +76,6 @@ export default function ApiRouteList({ routes, updateRouteUI }: Props) {
                 >
                   <div>
                     <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300">
-                      {route.id}
                       {route.method}
                     </span>{" "}
                     <span className="font-mono">{route.path}</span>

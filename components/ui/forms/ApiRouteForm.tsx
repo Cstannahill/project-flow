@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { ApiRoutePayload, ApiRoute } from "@/types/base"; // Update this path if needed
+import { useAppSelector } from "@/lib/store/hooks"; // Update this path if needed
+import { selectCurrentProjectId } from "@/lib/store/selectors";
+import { ToastContainer, toast } from "react-toastify";
+import { on } from "events";
+// import "react-toastify/dist/ReactToastify.css";
 
 type ApiRouteFormProps = {
   initialData?: ApiRoutePayload;
@@ -38,8 +43,9 @@ export default function ApiRouteForm({
     body: initialData.body || {},
     responses: initialData.responses || {},
   });
+  const projectId = useAppSelector(selectCurrentProjectId);
   const handleAddRoute = async (newRoute: any) => {
-    await fetch(`/api/projects/${form?.projectId}/apis`, {
+    const res = await fetch(`/api/projects/${projectId}/apis`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newRoute),
@@ -55,12 +61,12 @@ export default function ApiRouteForm({
     setForm((prev) => ({ ...prev, [field]: value }));
   };
   const handleSaveRoute = async (updatedRoute: ApiRoutePayload) => {
-    const apiPath = `/api/projects/${updatedRoute.projectId}/apis/${updatedRoute.id}`;
+    const apiPath = `/api/projects/${projectId}/apis/${updatedRoute.id}`;
     console.log("Incoming Route - Save");
     console.log(apiPath);
     console.table(updatedRoute);
     const res = await fetch(
-      `/api/projects/${updatedRoute.projectId}/apis/${updatedRoute.id}`,
+      `/api/projects/${projectId}/apis/${updatedRoute.id}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -70,16 +76,31 @@ export default function ApiRouteForm({
 
     if (res.ok) {
       const saved = await res.json();
+      const updateOpenAPIApec = await fetch(
+        `/api/projects/${projectId}/openapi-spec/rebuild/route`
+      );
+      if (updateOpenAPIApec.ok) {
+        toast("Open API-spec saved!");
+      } else {
+        toast("Failed to update Open API-spec", { type: "error" });
+      }
     }
   };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // const forms = event.currentTarget
+    // const formElements = form.elements as typeof form.elements
     if (form?.id && form?.id !== "") {
       handleSaveRoute(form);
     } else {
       handleAddRoute(form);
     }
     updateRouteUI();
+    toast("Route saved successfully!");
+    // Reset the form after submission
+    setForm(defaultApiRoutePayload);
+    onCancel();
   };
 
   return (
@@ -162,7 +183,7 @@ export default function ApiRouteForm({
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+            className="bg-gray-400 px-4 py-2 rounded hover:bg-gray-300"
           >
             Cancel
           </button>
