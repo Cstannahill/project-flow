@@ -1,154 +1,106 @@
+"use client";
+
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import {
+  Card,
+  CardHeader,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  ChevronDownIcon,
+  PencilIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ApiRoute } from "@/types/base";
-import ApiRouteForm from "@/components/ui/forms/ApiRouteForm";
+import ApiRouteDialog from "@/components/ui/modals/ApiRouteDialogue";
+import type { ApiRoute } from "@/types/entities/apiRoutes";
+import safeStringify from "fast-safe-stringify";
 
-type Props = {
+interface Props {
   routes: ApiRoute[];
-  updateRouteUI: () => Promise<void>;
-};
+  doRefreshAction: () => Promise<void>;
+}
 
-export default function ApiRouteList({ routes, updateRouteUI }: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const handleUpdateRoute = async (updatedRoute: any) => {
-    const apiPath = `/api/projects/${updatedRoute.projectId}/apis/${updatedRoute.id}`;
-    console.log(
-      `API PATH In Handle Update API ROUTE LIST BEFORE FETCH ${apiPath}`
-    );
-    // try {
-    //   await fetch(
-    //     `/api/projects/${updatedRoute.projectId}/apis/${updatedRoute.id}`,
-    //     {
-    //       method: "PUT",
-    //       headers: { "Content-Type": "application/json" },
-    //       body: JSON.stringify(updatedRoute),
-    //     }
-    //   );
-    // } catch (err) {}
-  };
-  const handleDelete = async (route: ApiRoute) => {
-    const confirmed = confirm("Delete this API route?");
-    if (!confirmed) return;
-    console.log("Incoming Route - Delete");
-    console.table(route);
-    const res = await fetch(
-      `/api/projects/${route.projectId}/apis/${route.id}`,
-      {
-        method: "DELETE",
-      }
-    );
-
-    if (res.ok) {
-      handleUpdateRoute(routes.filter((r) => r.id !== route.id));
-    }
-  };
+export default function ApiRouteList({ routes, doRefreshAction }: Props) {
+  const [editing, setEditing] = useState<ApiRoute | null>(null);
 
   return (
-    <div className="space-y-4">
-      {" "}
-      {routes.map((route) => {
-        const isExpanded = expanded[route.id] ?? false;
-        const isEditing = editingId === route.id;
+    <>
+      {editing && (
+        <ApiRouteDialog
+          open={!!editing}
+          onCloseAction={() => setEditing(null)}
+          initialData={editing}
+          doRefreshAction={doRefreshAction}
+        />
+      )}
 
-        return (
-          <div
-            key={route.id}
-            className="border rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
-          >
-            {isEditing ? (
-              <div className="p-4">
-                <ApiRouteForm
-                  initialData={route}
-                  updateRouteUI={updateRouteUI}
-                  onCancel={() => setEditingId(null)}
-                />
-              </div>
-            ) : (
-              <div>
-                <div
-                  onClick={() => toggleExpand(route.id)}
-                  className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800"
-                >
-                  <div>
-                    <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300">
-                      {route.method}
-                    </span>{" "}
-                    <span className="font-mono">{route.path}</span>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {route.summary}
-                    </div>
-                  </div>
-                  <div className="flex gap-3 items-center text-sm">
-                    <button
-                      onClick={() => setEditingId(route.id)}
-                      className="text-blue-600 hover:underline"
+      <div className="space-y-4">
+        {routes.map((r) => (
+          <Card key={r.id} className="group">
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="flex cursor-pointer flex-row items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="min-w-[60px] justify-center font-mono text-xs"
                     >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(route)}
-                      className="text-red-600 hover:underline"
+                      {r.method}
+                    </Badge>
+                    <div className="font-mono text-sm">{r.path}</div>
+                  </div>
+
+                  <ChevronDownIcon className="h-5 w-5 transition-transform group-data-[state=open]:rotate-180" />
+                </CardHeader>
+              </CollapsibleTrigger>
+
+              <CollapsibleContent>
+                <CardContent className="space-y-4 pt-0">
+                  {r.description && (
+                    <CardDescription>{r.description}</CardDescription>
+                  )}
+
+                  <pre className="bg-muted/40 overflow-auto rounded-md p-4 text-xs">
+                    {safeStringify(r, null, 2)}
+                  </pre>
+
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setEditing(r)}
                     >
-                      Delete
-                    </button>
+                      <PencilIcon className="mr-1 h-4 w-4" /> Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm("Delete this route?")) return;
+                        await fetch(
+                          `/api/projects/${r.projectId}/apis/${r.id}`,
+                          { method: "DELETE" },
+                        );
+                        doRefreshAction();
+                      }}
+                    >
+                      <TrashIcon className="mr-1 h-4 w-4" /> Delete
+                    </Button>
                   </div>
-                </div>
-
-                {isExpanded && (
-                  <div className="p-4 border-t text-sm space-y-2 bg-gray-50 dark:bg-neutral-800">
-                    {route.description && (
-                      <p>
-                        <strong>Description:</strong> {route.description}
-                      </p>
-                    )}
-
-                    <details open>
-                      <summary className="cursor-pointer font-medium">
-                        Params
-                      </summary>
-                      <pre className="bg-neutral-100 dark:bg-neutral-900 p-2 rounded overflow-auto text-xs">
-                        {JSON.stringify(route.params || {}, null, 2)}
-                      </pre>
-                    </details>
-
-                    <details>
-                      <summary className="cursor-pointer font-medium">
-                        Query
-                      </summary>
-                      <pre className="bg-neutral-100 dark:bg-neutral-900 p-2 rounded overflow-auto text-xs">
-                        {JSON.stringify(route.query || {}, null, 2)}
-                      </pre>
-                    </details>
-
-                    <details>
-                      <summary className="cursor-pointer font-medium">
-                        Body
-                      </summary>
-                      <pre className="bg-neutral-100 dark:bg-neutral-900 p-2 rounded overflow-auto text-xs">
-                        {JSON.stringify(route.body || {}, null, 2)}
-                      </pre>
-                    </details>
-
-                    <details>
-                      <summary className="cursor-pointer font-medium">
-                        Responses
-                      </summary>
-                      <pre className="bg-neutral-100 dark:bg-neutral-900 p-2 rounded overflow-auto text-xs">
-                        {JSON.stringify(route.responses || {}, null, 2)}
-                      </pre>
-                    </details>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }

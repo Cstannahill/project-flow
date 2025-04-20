@@ -1,4 +1,9 @@
-import { Table, type Column, Relationship, SchemaData } from "@/types/base";
+import {
+  Table,
+  type Column,
+  Relationship,
+  SchemaData,
+} from "@/types/entities/databases";
 
 export function parseSQLSchema(sql: string): SchemaData {
   const tables: Table[] = [];
@@ -23,10 +28,8 @@ export function parseSQLSchema(sql: string): SchemaData {
       if (fkMatch) {
         const [, fromColumn, toTable, toColumn] = fkMatch;
         relationships.push({
-          fromTable: tableName,
-          fromColumn,
-          toTable,
-          toColumn,
+          source: fromColumn,
+          target: toColumn,
           type: "OneToMany",
         });
         return;
@@ -90,10 +93,9 @@ export function parsePrismaSchema(prisma: string): SchemaData {
           const toColumn = referencesMatch[1];
 
           relationships.push({
-            fromTable: modelName,
-            fromColumn,
-            toTable: referencedModel,
-            toColumn,
+            source: modelName,
+            target: referencedModel,
+
             type: "OneToMany",
           });
         }
@@ -153,10 +155,8 @@ export function parseDbmlSchema(dbml: string): SchemaData {
   while ((match = refRegex.exec(dbml)) !== null) {
     const [, fromTable, fromColumn, toTable, toColumn] = match;
     relationships.push({
-      fromTable,
-      fromColumn,
-      toTable,
-      toColumn,
+      source: fromTable,
+      target: toTable,
       type: "OneToMany",
     });
   }

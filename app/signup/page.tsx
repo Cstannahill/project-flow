@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import { P } from "@/components/ui/Typography";
+import safeStringify from "fast-safe-stringify";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,7 +20,7 @@ export default function SignupPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: safeStringify({ name, email, password }),
     });
 
     const data = await res.json();
@@ -67,7 +69,7 @@ export default function SignupPage() {
           />
 
           {error && (
-            <p className="text-red-500 text-sm text-center mt-2">{error}</p>
+            <P className="text-red-500 text-sm text-center mt-2">{error}</P>
           )}
 
           <button
@@ -119,7 +121,7 @@ export default function SignupPage() {
           </button>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <P className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{" "}
           <a
             href="/login"
@@ -127,7 +129,7 @@ export default function SignupPage() {
           >
             Login here
           </a>
-        </p>
+        </P>
       </div>
     </div>
   );

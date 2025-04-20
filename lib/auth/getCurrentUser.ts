@@ -1,4 +1,3 @@
-// lib/auth/getCurrentUser.ts
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/auth";
 import prisma from "@/lib/prisma";

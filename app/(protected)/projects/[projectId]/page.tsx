@@ -1,62 +1,115 @@
 "use client";
 
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  fetchProjects,
+  setCurrentProject,
+  selectProjects,
+  selectProjectsStatus,
+  selectCurrentProject,
+  deleteProject,
+  updateProject,
+} from "@/lib/store/projects";
 import ProjectTechStack from "@/components/ProjectTechStack";
-import { useParams } from "next/navigation";
-import { use, useEffect, useState } from "react";
-import { techOptions } from "@/lib/staticAssets";
-import type { TechItem } from "@/types/base";
-import Image from "next/image";
-import css from "styled-jsx/css";
+import { toast } from "react-hot-toast";
+import { Loading } from "@/components/ui/Loading";
+import { Trash2 } from "lucide-react";
+import { DeleteConfirmationDialog } from "@/components/ui/dialogs/DeleteConfirmationDialog";
+import type { ProjectSummary } from "@/types/entities/projects";
+import { persistSelectedProjectId } from "@/lib/store/users";
+import { P } from "@/components/ui/Typography";
 
-export default function OverviewTab() {
-  const [project, setProject] = useState<any>(null);
+export default function ProjectOverviewPage() {
+  const dispatch = useAppDispatch();
   const { projectId } = useParams();
-  const handleSaveTechStack = async (stack: Record<string, string>) => {
+  const router = useRouter();
+  // grab full list & status
+  const projects = useAppSelector(selectProjects);
+  const status = useAppSelector(selectProjectsStatus);
+  // grab the one we’re editing
+  const project = useAppSelector(selectCurrentProject);
+
+  // 1) on mount, load the list if not already
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchProjects());
+    }
+  }, [status, dispatch]);
+
+  // 2) whenever list is ready or projectId changes, pick the right one
+  useEffect(() => {
+    if (status === "succeeded" && projectId) {
+      const match = projects.find((p) => p.id === projectId) || null;
+      dispatch(setCurrentProject(match));
+    }
+  }, [status, projectId, projects, dispatch]);
+  if (status === "loading") return <Loading />;
+  if (!project) return <P>Project not found.</P>;
+  const handleDelete = async () => {
+    console.log("andleDelete fired");
     try {
-      const res = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stack }),
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to save tech stack");
-      }
-
-      console.log("Tech stack saved *toast!");
-    } catch (err) {
-      console.error(err);
-      alert("Error saving tech stack.");
+      await dispatch(deleteProject(project.id)).unwrap();
+      toast.success(`Deleted project “${project.title}.”`);
+      router.push("/dashboard");
+    } catch (err: any) {
+      toast.error(`Error deleting project: ${err}`);
     }
   };
-
-  useEffect(() => {
-    if (!projectId) return;
-    fetch(`/api/projects/${projectId}`)
-      .then((res) => res.json())
-      .then(setProject);
-  }, [projectId]);
-
-  if (!project) return <p>Loading...</p>;
-
+  // Save handler now dispatches a PATCH + updates store
+  const handleSave = async (payload: {
+    title: string;
+    description?: string;
+    techStack: Record<string, string>;
+  }) => {
+    try {
+      const updated = await dispatch(
+        updateProject({ ...project, ...payload }),
+      ).unwrap();
+      dispatch(persistSelectedProjectId(updated.id));
+      toast.success("Project updated successfully!");
+      // optionally re‑navigate or refresh
+    } catch (err: any) {
+      toast.error("Failed to update project: " + err);
+    }
+  };
   return (
-    <div>
-      <ProjectTechStack
-        initialData={
-          project?.techStack || {
-            frontend: "",
-            backend: "",
-            database: "",
-            css: "",
-            hosting: "",
-            auth: "",
-            stateManagement: "",
-            api: "",
-          }
+    <main className="fade-in animate-in zoom-in mx-auto max-w-4xl px-4 py-8 duration-1000">
+      <DeleteConfirmationDialog
+        trigger={
+          <Trash2
+            className="float-right cursor-pointer text-red-500"
+            size={20}
+          />
         }
-        projectInfo={{ title: project.title, description: project.description }}
-        onSave={handleSaveTechStack}
+        title={`Delete "${project.title}"?`}
+        onConfirm={handleDelete}
       />
-    </div>
+      <section>
+        <ProjectTechStack
+          initialData={project?.techStack || {}}
+          projectInfo={{
+            projectId: project?.id,
+            title: project?.title || "",
+            description: project?.description,
+            createdAt: project?.createdAt?.toString() as string,
+            updatedAt: project?.updatedAt?.toString() as string,
+          }}
+          onSave={handleSave}
+        />
+      </section>
+    </main>
   );
+  // return (
+  //   <div>
+  //     <ProjectTechStack
+  //       initialData={project?.techStack || {}}
+  //       projectInfo={{
+  //         title: project?.title,
+  //         description: project?.description,
+  //       }}
+  //     />
+  //   </div>
+  // );
 }

@@ -6,6 +6,21 @@ import DiagramEditor from "@/components/diagrams/DiagramEditor";
 import DiagramViewer from "@/components/diagrams/DiagramViewer";
 import DiagramModal from "@/components/diagrams/DiagramModal";
 import { diagramTypes } from "@/lib/mermaidPresets";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import {
+  updateDiagram,
+  fetchDiagrams,
+  deleteDiagram,
+  createDiagram,
+  selectDiagramsByProject,
+  selectDiagramStatusByProject,
+  selectDiagramById,
+} from "@/lib/store/diagrams";
+import toast from "react-hot-toast";
+import { Loading } from "@/components/ui/Loading";
+import { Trash2 } from "lucide-react";
+import { DeleteConfirmationDialog } from "@/components/ui/dialogs/DeleteConfirmationDialog";
+import { P } from "@/components/ui/Typography";
 
 type Diagram = {
   id: string;
@@ -15,101 +30,80 @@ type Diagram = {
 };
 
 export default function DiagramsTab() {
-  const { projectId } = useParams();
-  console.log("Project ID:", projectId);
-  const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+  const dispatch = useAppDispatch();
+  const { projectId } = useParams() as { projectId: string };
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
-  const [fullscreenDiagram, setFullscreenDiagram] = useState<Diagram | null>(
-    null
+  const [fullScreenId, setFullScreenId] = useState<string | null>(null);
+  const diagrams = useAppSelector((s) => selectDiagramsByProject(s, projectId));
+  const status = useAppSelector((s) =>
+    selectDiagramStatusByProject(s, projectId)
   );
-  const getAllDiagrams = async () => {
-    const res = await fetch(`/api/diagrams/`);
-    const data = await res.json();
-    console.log(data);
-  };
+  const fullscreenDiagram = useAppSelector((s) =>
+    fullScreenId ? selectDiagramById(s, fullScreenId) : null
+  );
   useEffect(() => {
-    const fetchDiagrams = async () => {
-      const res = await fetch(`/api/projects/${projectId}/diagrams`);
-      const data = await res.json();
-      setDiagrams(data);
-      setLoading(false);
-    };
-
-    if (projectId) fetchDiagrams();
-  }, [projectId]);
-
-  useEffect(() => {
-    getAllDiagrams();
-  }, []);
-
-  const handleSave = async (
-    data: { content: string; type: string },
-    existingId?: string
-  ) => {
-    if (!projectId) return;
-
-    if (existingId) {
-      const res = await fetch(
-        `/api/projects/${projectId}/diagrams/${existingId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-      const updated = await res.json();
-      setDiagrams((prev) =>
-        prev.map((d) => (d.id === updated.id ? updated : d))
-      );
-    } else {
-      const type = data.type;
-      const snippet = diagramTypes.find((d) => d.value === type)?.snippet || "";
-      const res = await fetch(`/api/projects/${projectId}/diagrams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Untitled Diagram",
-          type,
-          content: snippet,
-        }),
-      });
-      const created = await res.json();
-      setDiagrams((prev) => [...prev, created]);
+    if (status === "idle" && projectId) {
+      dispatch(fetchDiagrams(projectId));
     }
+  }, [status, dispatch, projectId]);
 
-    setSelectedId(null);
-    setCreating(false);
+  const handleSave = async (data: {
+    id?: string;
+    title: string;
+    type: string;
+    content: string;
+  }) => {
+    try {
+      console.log(data);
+      if (data?.id) {
+        const { id } = data;
+        // UPDATE
+        console.log("updating");
+        await dispatch(updateDiagram({ id, ...data })).unwrap();
+        toast.success("Diagram updated");
+      } else {
+        // CREATE
+        console.log("creating");
+        if (data?.title === "") {
+          data.title = `Untitled ${data?.type} Diagram`;
+        }
+        await dispatch(createDiagram({ projectId, ...data })).unwrap();
+        toast.success("Diagram created");
+      }
+      setCreating(false);
+      setSelectedId(null);
+    } catch (err: any) {
+      toast.error(err);
+    }
   };
 
   const handleRename = async (id: string, newTitle: string) => {
-    const res = await fetch(`/api/projects/${projectId}/diagrams/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: newTitle }),
-    });
-
-    const updated = await res.json();
-    setDiagrams((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    try {
+      const res = await dispatch(
+        updateDiagram({ id, title: newTitle })
+      ).unwrap();
+      toast.success(`Diagram "${res.title}" updated`);
+    } catch (error) {
+      toast.error("Failed to update diagram title");
+    }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmed = confirm("Delete this diagram?");
-    if (!confirmed) return;
-
-    await fetch(`/api/projects/${projectId}/diagrams/${id}`, {
-      method: "DELETE",
-    });
-
-    setDiagrams((prev) => prev.filter((d) => d.id !== id));
-    if (selectedId === id) setSelectedId(null);
-    if (viewingId === id) setViewingId(null);
+  const handleDelete = async (id: string, title: string) => {
+    try {
+      await dispatch(deleteDiagram({ id })).unwrap();
+      toast.success(`Deleted diagram "${title}"`);
+      if (selectedId === id) setSelectedId(null);
+      if (viewingId === id) setViewingId(null);
+    } catch (err: any) {
+      toast.error(err);
+    }
   };
-
+  if (status === "loading") return <Loading />;
+  if (status === "failed") return <P>Error loading diagrams.</P>;
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -122,12 +116,10 @@ export default function DiagramsTab() {
         </button>
       </div>
 
-      {loading ? (
-        <p>Loading diagrams...</p>
-      ) : diagrams.length === 0 && !creating ? (
-        <p className="text-gray-500 italic">
+      {diagrams.length === 0 && !creating ? (
+        <P className="text-gray-500 italic">
           No diagrams yet for this project.
-        </p>
+        </P>
       ) : (
         <div className="space-y-4">
           {diagrams.map((diagram) => {
@@ -170,9 +162,9 @@ export default function DiagramsTab() {
                         {diagram.title || "Untitled Diagram"}
                       </h3>
                     )}
-                    <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                    <P className="text-sm text-gray-500 dark:text-gray-400 capitalize">
                       Type: {diagram.type}
-                    </p>
+                    </P>
                   </div>
                   <div className="space-x-3 text-sm">
                     <button
@@ -186,7 +178,7 @@ export default function DiagramsTab() {
                       {isViewing ? "Hide" : "View"}
                     </button>
                     <button
-                      onClick={() => setFullscreenDiagram(diagram)}
+                      onClick={() => setFullScreenId(diagram.id)}
                       className="text-indigo-600 hover:underline"
                     >
                       Fullscreen
@@ -201,12 +193,15 @@ export default function DiagramsTab() {
                     >
                       {isEditing ? "Cancel Edit" : "Edit"}
                     </button>
-                    <button
-                      onClick={() => handleDelete(diagram.id)}
-                      className="text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <DeleteConfirmationDialog
+                      trigger={
+                        <button className="text-red-500 inline-flex align-text-bottom justify-center cursor-pointer items-center mr-3">
+                          <Trash2 size={17} />
+                        </button>
+                      }
+                      title={`Delete "${diagram.title}"?`}
+                      onConfirm={() => handleDelete(diagram.id, diagram.title)}
+                    />
                   </div>
                 </div>
 
@@ -214,12 +209,14 @@ export default function DiagramsTab() {
                   <DiagramEditor
                     initialContent={diagram.content}
                     initialType={diagram.type}
-                    onSave={(data) => handleSave(data, diagram.id)}
+                    onSaveAction={(data) =>
+                      handleSave({ id: diagram.id, ...data, title: titleDraft })
+                    }
                   />
                 )}
 
                 {isViewing && !isEditing && (
-                  <DiagramViewer content={diagram.content} />
+                  <DiagramViewer content={diagram.content || ""} />
                 )}
               </div>
             );
@@ -227,7 +224,11 @@ export default function DiagramsTab() {
 
           {creating && (
             <div className="border rounded-lg p-4 bg-white dark:bg-neutral-900 shadow-sm">
-              <DiagramEditor onSave={(data) => handleSave(data)} />
+              <DiagramEditor
+                onSaveAction={(data) =>
+                  handleSave({ ...data, title: titleDraft })
+                }
+              />
               <div className="pt-2 text-right">
                 <button
                   onClick={() => setCreating(false)}
@@ -243,9 +244,9 @@ export default function DiagramsTab() {
 
       {fullscreenDiagram && (
         <DiagramModal
-          content={fullscreenDiagram.content}
+          content={fullscreenDiagram.content || ""}
           title={fullscreenDiagram.title}
-          onClose={() => setFullscreenDiagram(null)}
+          onCloseAction={() => setFullScreenId(null)}
         />
       )}
     </div>

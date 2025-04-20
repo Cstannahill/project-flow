@@ -4,7 +4,7 @@ const fetchData = async () => {
   const response = await fetch("http://localhost:11434/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+    body: safeStringify({
       model: "mistral-7b",
       stream: true,
     }),

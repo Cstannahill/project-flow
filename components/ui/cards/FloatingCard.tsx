@@ -1,15 +1,16 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, ElementType, Component } from "react";
 import clsx from "clsx";
 
 interface FloatingCardProps {
   children: ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  asType?: ElementType<any>;
   href?: string;
   shadow?: "soft" | "elevated" | "none";
   hoverEffect?: boolean;
+  onClick?: () => void;
 }
 
 /**
@@ -39,20 +40,20 @@ interface FloatingCardProps {
  * 🚀 Example Usage:
  * <FloatingCard className="bg-[#001f2e] p-6 text-white">
  *   <h3 className="text-lg font-semibold mb-1">AI for Mongo</h3>
- *   <p className="text-sm opacity-80">LLMs in embedded search & doc AI.</p>
+ *   <P className="text-sm opacity-80">LLMs in embedded search & doc AI.</P>
  * </FloatingCard>
  */
 
 export default function FloatingCard({
   children,
   className,
-  as = "div",
+  asType = "div",
   href,
   shadow = "elevated",
   hoverEffect = true,
+  onClick,
 }: FloatingCardProps) {
-  const Component = as as any;
-
+  const Component = asType as any;
   const base = clsx(
     "rounded-2xl transition-all duration-300 ease-in-out overflow-hidden bg-gray-800",
     shadow === "elevated" && "shadow-[0_12px_40px_rgba(0,0,0,0.2)]",
@@ -63,7 +64,11 @@ export default function FloatingCard({
     className
   );
 
-  const inner = <Component className={base}>{children}</Component>;
+  const inner = (
+    <Component onClick={onClick && onClick} className={`${base}`}>
+      {children}
+    </Component>
+  );
 
   return href ? (
     <a href={href} className="block no-underline">

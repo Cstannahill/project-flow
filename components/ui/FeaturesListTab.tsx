@@ -2,159 +2,143 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "react-hot-toast";
+
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
+  fetchFeatures,
+  createFeature,
+  updateFeature,
+  deleteFeature,
+} from "@/lib/store/features";
 import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
+  selectFeaturesByProject,
+  selectFeatureStatusByProject,
+  selectFeatureErrorByProject,
+} from "@/lib/store/features";
 
-import SortableFeatureCard from "@/components/ui/cards/SortableFeatureCard";
-
-const typeOptions = [
-  "Frontend",
-  "Backend",
-  "API",
-  "Database",
-  "Auth",
-  "DevOps",
-  "Testing",
-  "Docs",
-  "Design",
-  "Third-Party Integration",
-  "Infrastructure",
-  "Deployment",
-];
-
-const statusOptions = ["Planned", "In Progress", "Complete"];
+import FeatureCard from "@/components/ui/cards/FeatureCard";
+import { DeleteConfirmationDialog } from "@/components/ui/dialogs/DeleteConfirmationDialog";
+import { typeOptions, statusOptions } from "@/lib/staticAssets";
+import { Loading } from "./Loading";
+import { P } from "./Typography";
 
 export default function FeatureListTab() {
-  const { projectId } = useParams();
-  const [features, setFeatures] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [savingOrder, setSavingOrder] = useState(false);
-  const [creatingFeature, setCreatingFeature] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    () => Object.fromEntries(typeOptions.map((t) => [t, true]))
+  const dispatch = useAppDispatch();
+  const { projectId } = useParams() as { projectId: string };
+
+  // Pull in normalized state
+  const features = useAppSelector((state) =>
+    selectFeaturesByProject(state, projectId),
   );
+  const status = useAppSelector((state) =>
+    selectFeatureStatusByProject(state, projectId),
+  ); // 'idle'|'loading'|'succeeded'|'failed'
+  const error = useAppSelector((state) =>
+    selectFeatureErrorByProject(state, projectId),
+  );
+
+  // UI state
   const [groupByType, setGroupByType] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(typeOptions.map((t) => [t, true])),
   );
+  const [creating, setCreating] = useState(false);
 
+  // 1) Fetch on mount
   useEffect(() => {
-    const fetchFeatures = async () => {
-      const res = await fetch(`/api/projects/${projectId}/features`);
-      const data = await res.json();
-      setFeatures(data);
-      setLoading(false);
-    };
-    if (projectId) fetchFeatures();
-  }, [projectId]);
+    if (status === "idle") {
+      dispatch(fetchFeatures(projectId));
+    }
+  }, [status, dispatch, projectId]);
 
-  const handleDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldIndex = features.findIndex((f) => f.id === active.id);
-      const newIndex = features.findIndex((f) => f.id === over.id);
-      const newOrder = arrayMove(features, oldIndex, newIndex);
-      setFeatures(newOrder);
+  // 2) Handlers
 
-      setSavingOrder(true);
-      await fetch(`/api/projects/${projectId}/features`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderedIds: newOrder.map((f) => f.id) }),
-      });
-      setSavingOrder(false);
+  const handleCreate = async (data: {
+    title: string;
+    type: string;
+    status: string;
+    tags: string[];
+    description: string;
+  }) => {
+    try {
+      const f = await dispatch(createFeature({ projectId, ...data })).unwrap();
+      toast.success(`Feature "${f.title}" created`);
+      setCreating(false);
+    } catch (err: any) {
+      toast.error(`Error creating feature: ${err}`);
     }
   };
 
-  const handleDelete = async (featureId: string) => {
-    const confirmed = confirm("Are you sure you want to delete this feature?");
-    if (!confirmed) return;
-
-    await fetch(`/api/projects/${projectId}/features`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featureId }),
-    });
-
-    setFeatures((prev) => prev.filter((f) => f.id !== featureId));
+  const handleEdit = async (updated: any) => {
+    try {
+      const f = await dispatch(updateFeature(updated)).unwrap();
+      toast.success(`Feature "${f.title}" updated`);
+    } catch (err: any) {
+      toast.error(`Error updating feature: ${err}`);
+    }
   };
 
-  const handleEdit = (updated: any) => {
-    setFeatures((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+  const handleDelete = async (id: string, title: string) => {
+    try {
+      await dispatch(deleteFeature({ featureId: id })).unwrap();
+      toast.success(`Feature "${title}" deleted`);
+    } catch (err: any) {
+      toast.error(`Error deleting feature: ${err}`);
+    }
   };
 
-  const handleCreate = (created: any) => {
-    setFeatures((prev) => [created, ...prev]);
-    setCreatingFeature(false);
-  };
-
-  const toggleGroup = (type: string) => {
-    setExpandedGroups((prev) => ({
-      ...prev,
-      [type]: !prev[type],
-    }));
-  };
-
+  // 3) Filtering & grouping
   const filtered = features.filter((f) =>
-    statusFilter ? f.status === statusFilter : true
+    statusFilter ? f.status === statusFilter : true,
   );
 
-  const grouped = typeOptions.reduce((acc, type) => {
-    acc[type] = filtered.filter((f) => f.type === type);
-    return acc;
-  }, {} as Record<string, any[]>);
-  const knownTypes = new Set(typeOptions);
-  grouped["Other"] = filtered.filter((f) => !knownTypes.has(f.type));
+  const grouped = typeOptions.reduce(
+    (acc, t) => {
+      acc[t] = filtered.filter((f) => f.type === t);
+      return acc;
+    },
+    {} as Record<string, typeof filtered>,
+  );
+  grouped["Other"] = filtered.filter((f) => !typeOptions.includes(f.type));
+
+  // 4) Render
+
+  if (status === "loading") return <Loading />;
+  if (status === "failed")
+    return <P className="text-red-500">Error: {error}</P>;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold">Features</h2>
-          {savingOrder && (
-            <p className="text-sm italic text-blue-500">Saving order...</p>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-4 items-center">
-          <select
-            value={statusFilter || ""}
-            onChange={(e) => setStatusFilter(e.target.value || null)}
-            className="border p-2 rounded text-sm bg-transparent"
-          >
-            <option value="">Filter: All Statuses</option>
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-
+      {/* Header */}
+      <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+        <h2 className="text-xl font-semibold">Features</h2>
+        <div className="flex items-center gap-4">
+          <div className="select-wrapper">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded border p-2 text-sm"
+            >
+              <option value="">All statuses</option>
+              {statusOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
-            onClick={() => setGroupByType((prev) => !prev)}
+            onClick={() => setGroupByType((g) => !g)}
             className="text-sm underline hover:text-blue-600"
           >
-            {groupByType ? "Switch to Flat View" : "Group by Type"}
+            {groupByType ? "Flat View" : "Group by Type"}
           </button>
-
-          {!creatingFeature && (
+          {!creating && (
             <button
-              onClick={() => setCreatingFeature(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm"
+              onClick={() => setCreating(true)}
+              className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
             >
               + Add Feature
             </button>
@@ -162,83 +146,79 @@ export default function FeatureListTab() {
         </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {groupByType ? (
-          <>
-            {Object.entries(grouped).map(([type, items]) => {
-              if (items.length === 0) return null;
-              return (
-                <div key={type} className="border rounded shadow-sm">
-                  <div
-                    onClick={() => toggleGroup(type)}
-                    className="cursor-pointer px-4 py-2 font-medium bg-neutral-100 dark:bg-neutral-800 border-b"
-                  >
-                    {type} {expandedGroups[type] !== false ? "▾" : "▸"}
-                  </div>
+      {/* Create form */}
+      {creating && (
+        <FeatureCard
+          feature={{
+            id: "new",
+            title: "",
+            type: typeOptions[0],
+            status: statusOptions[0],
+            tags: [],
+            description: "",
+            projectId: projectId,
+          }}
+          projectId={projectId}
+          isNew
+          onEditAction={handleCreate}
+          onDelete={() => setCreating(false)}
+        />
+      )}
 
-                  {expandedGroups[type] !== false && (
-                    <SortableContext
-                      items={items.map((f) => f.id)}
-                      strategy={verticalListSortingStrategy}
+      {/* List */}
+      {groupByType ? (
+        Object.entries(grouped).map(([type, items]) => {
+          if (!items.length) return null;
+          return (
+            <div key={type} className="rounded border shadow-sm">
+              <div
+                onClick={() =>
+                  setExpandedGroups((e) => ({ ...e, [type]: !e[type] }))
+                }
+                className="flex cursor-pointer justify-between px-4 py-2"
+              >
+                <span>{type}</span>
+                <span>{expandedGroups[type] ? "▾" : "▸"}</span>
+              </div>
+              {expandedGroups[type] && (
+                <div className="space-y-3 p-4">
+                  {items.map((f) => (
+                    <FeatureCard
+                      key={f.id}
+                      feature={f}
+                      onEditAction={handleEdit}
+                      projectId={projectId}
                     >
-                      <div className="p-4 space-y-3">
-                        {items.map((feature) => (
-                          <SortableFeatureCard
-                            key={feature.id}
-                            feature={feature}
-                            onDelete={handleDelete}
-                            onEdit={handleEdit}
-                            projectId={projectId as string}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  )}
+                      <DeleteConfirmationDialog
+                        trigger={<button className="text-red-500">🗑️</button>}
+                        title={`Delete "${f.title}"?`}
+                        onConfirm={() => handleDelete(f.id, f.title)}
+                      />
+                    </FeatureCard>
+                  ))}
                 </div>
-              );
-            })}
-          </>
-        ) : (
-          <SortableContext
-            items={filtered.map((f) => f.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-3">
-              {filtered.map((feature) => (
-                <SortableFeatureCard
-                  key={feature.id}
-                  feature={feature}
-                  onDelete={handleDelete}
-                  onEdit={handleEdit}
-                  projectId={projectId as string}
-                />
-              ))}
+              )}
             </div>
-          </SortableContext>
-        )}
-
-        {creatingFeature && (
-          <div className="mt-4">
-            <SortableFeatureCard
-              feature={{
-                id: "new",
-                title: "",
-                type: "Frontend",
-                tags: [],
-                status: "Planned",
-              }}
-              isNew
-              onDelete={() => setCreatingFeature(false)}
-              onEdit={handleCreate}
-              projectId={projectId as string}
-            />
-          </div>
-        )}
-      </DndContext>
+          );
+        })
+      ) : (
+        <div className="bg-brand space-y-3">
+          {filtered.map((f) => (
+            <FeatureCard
+              key={f.id}
+              feature={f}
+              onEditAction={handleEdit}
+              projectId={projectId}
+            >
+              <DeleteConfirmationDialog
+                trigger={<button className="text-red-500">🗑️</button>}
+                title={`Delete "${f.title}"?`}
+                onConfirm={() => handleDelete(f.id, f.title)}
+              />
+            </FeatureCard>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

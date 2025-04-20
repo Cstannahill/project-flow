@@ -5,7 +5,9 @@ import { Divider } from "@/components/ui/Divider";
 import Image from "next/image";
 import ImageGallery from "../ImageGallery";
 import { useAppSelector } from "@/lib/store/hooks";
-import { selectCurrentProject } from "@/lib/store/selectors";
+import { selectCurrentProject } from "@/lib/store/projects";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 interface SideNavProps {
   items: { label: string; href: string }[];
@@ -93,7 +95,7 @@ const imgGalleryPhotos = [
   // },
 ];
 
-const brandIcon = (
+export const brandIcon = (
   <Image
     src="/icons/shadyt-logo.png"
     alt="Logo"
@@ -105,6 +107,7 @@ const brandIcon = (
 
 export default function SideNav({ items }: SideNavProps) {
   const project = useAppSelector(selectCurrentProject);
+  const pathname = usePathname();
   return (
     <aside className="w-[220px] rounded-2xl h-screen sticky top-0 hidden md:flex flex-col gap-1 p-3 bg-gradient-brand text-brand-text shadow-lg bg-radial-prime border-r border-white/10 z-40">
       <BrandHeader
@@ -115,9 +118,6 @@ export default function SideNav({ items }: SideNavProps) {
       />
 
       <nav className="flex flex-col gap-1 text-sm font-medium tracking-tight">
-        <span className="text-zinc-400 text-2xs mt-0 mx-auto uppercase pl-2">
-          {project?.name || "Project Nav"}
-        </span>
         <div className="space-y-1">
           {items.map((item, index) => (
             <NavItem

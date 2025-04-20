@@ -1,45 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/auth";
 import prisma from "@/lib/prisma";
-import { generateOpenApiSpec } from "@/lib/openapi/generator";
+import { generateOpenApiSpec, RouteForSpec } from "@/lib/openapi/generator";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: { projectId: string } },
 ) {
-  const { projectId } = await params;
+  const { projectId } = params;
   console.log(`Checking for OpenAPI spec for project: ${projectId}`);
 
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Look for an existing spec
-  let spec = await prisma.apiSpec.findFirst({
+  // Try to fetch existing spec record
+  const specRecord = await prisma.apiSpec.findFirst({
     where: { projectId },
   });
 
-  if (!spec) {
+  let specData: any;
+
+  if (specRecord) {
+    // Use stored spec
+    specData = specRecord.spec;
+  } else {
     console.log(
-      `No existing spec found. Building new spec for project ${projectId}`
+      `No existing spec found. Generating new spec for project ${projectId}`,
     );
 
-    // Get all routes for the project
+    // Fetch all API routes for the project
     const apiRoutes = await prisma.apiRoute.findMany({
       where: { projectId },
     });
 
-    // If no routes, return early
     if (apiRoutes.length === 0) {
       return NextResponse.json(
         { error: "No API routes found for this project." },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    const sanitizedRoutes = apiRoutes.map((r) => ({
-      ...r,
+
+    // Sanitize JSON fields to ensure object shape
+    const sanitizedRoutes: RouteForSpec[] = apiRoutes.map((r) => ({
+      path: r.path,
+      method: r.method,
+      summary: r.summary || "",
+      description: r.description || "",
       params:
         typeof r.params === "object" && r.params !== null
           ? (r.params as Record<string, any>)
@@ -57,11 +59,10 @@ export async function GET(
           ? (r.responses as Record<string, any>)
           : undefined,
     }));
-    // Generate the spec from available routes
-    const generatedSpec = generateOpenApiSpec(sanitizedRoutes, projectId);
 
-    // Save the generated spec
-    spec = await prisma.apiSpec.create({
+    // Generate spec and persist
+    const generatedSpec = generateOpenApiSpec(sanitizedRoutes, projectId);
+    const newRecord = await prisma.apiSpec.create({
       data: {
         projectId,
         title: `Generated API Spec for Project ${projectId}`,
@@ -70,69 +71,21 @@ export async function GET(
         spec: generatedSpec,
       },
     });
+
+    specData = newRecord.spec;
   }
 
-  return NextResponse.json({ spec: spec.spec });
+  // Return the raw OpenAPI document
+  const { openapi, info, paths, ...rest } = specData;
+  return NextResponse.json({ openapi, info, paths, ...rest });
 }
 
-// POST: Create or update OpenAPI spec
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = await params;
-  console.log(`entering POST Route for OpenAPI spec. ID: ${id}`);
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { title, description, version = "1.0.0", spec } = await req.json();
-
-  if (!title || !spec || typeof spec !== "object") {
-    return NextResponse.json(
-      { error: "Missing or invalid title/spec" },
-      { status: 400 }
-    );
-  }
-
-  const upserted = await prisma.apiSpec.upsert({
-    where: { id },
-    create: {
-      title,
-      description,
-      version,
-      projectId: id,
-      spec,
-    },
-    update: {
-      title,
-      description,
-      version,
-      spec,
-    },
-  });
-
-  return NextResponse.json(upserted);
-}
-
-// DELETE: Remove OpenAPI spec
 export async function DELETE(
   req: NextRequest,
-  props: { params: Promise<{ id: string }> }
+  { params }: { params: { projectId: string } },
 ) {
-  const params = await props.params;
-  const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { projectId } = params;
 
-  const projectId = params.id;
-
-  await prisma.apiSpec.deleteMany({
-    where: { projectId },
-  });
-
+  await prisma.apiSpec.deleteMany({ where: { projectId } });
   return NextResponse.json({ success: true });
 }

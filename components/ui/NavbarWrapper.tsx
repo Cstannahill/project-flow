@@ -3,9 +3,7 @@
 import { usePathname, useParams } from "next/navigation";
 import { useState } from "react";
 import Navbar from "@/components/ui/Navbar";
-import SidebarLayout from "./SidebarLayout";
 import { useEffect } from "react";
-import { store } from "@/lib/store/store";
 
 export default function NavbarWrapper({
   children,
@@ -48,10 +46,6 @@ export default function NavbarWrapper({
     if (Array.isArray(projectId)) {
       projectId = projectId[0];
     }
-    const stateData = store.getState();
-    console.log("1.State Data\n2.Project ID");
-    console.log(stateData);
-    console.log(pId, projectId);
     const newNavItems = buildNavItems(projectId);
     setNavItems(newNavItems);
     setPId(projectId);

@@ -1,4 +1,5 @@
-import { Table, Column, type SchemaData } from "@/types/base";
+import { Table, Column, type SchemaData } from "@/types/entities/databases";
+import safeStringify from "fast-safe-stringify";
 
 export function exportSchema(
   SchemaData: SchemaData,
@@ -57,7 +58,7 @@ export function exportSchema(
 
     case "json":
     default:
-      return JSON.stringify(SchemaData.tables, null, 2);
+      return safeStringify(SchemaData.tables, null, 2);
   }
 }
 

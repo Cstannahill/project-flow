@@ -16,15 +16,29 @@ enum HttpMethod {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  password      String?
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[] @relation("UserAccounts")
-  sessions      Session[] @relation("UserSessions")
-  projects      Project[]
+  id              String            @id @default(cuid())
+  name            String?
+  email           String?           @unique
+  password        String?
+  emailVerified   DateTime?
+  image           String?
+  accounts        Account[]         @relation("UserAccounts")
+  sessions        Session[]         @relation("UserSessions")
+  projects        Project[]
+  UserPreferences UserPreferences[]
+}
+
+model UserPreferences {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  selectedProjectId    String?
+  theme                String   @default("light")
+  language             String   @default("en")
+  notificationsEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Project {
@@ -36,29 +50,30 @@ model Project {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  features  Feature[]
-  schemas   DatabaseSchema[]
-  apiRoutes ApiRoute[]
-  ApiSpec   ApiSpec[]
-  openapiSpec  Json?
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  features    Feature[]
+  schemas     DatabaseSchema[]
+  apiRoutes   ApiRoute[]
+  ApiSpec     ApiSpec[]
+  openapiSpec Json?
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserAccounts")
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String?
+  refresh_token_expires_in Int?    @map("refresh_token_expires_in")
+  access_token             String?
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String?
+  session_state            String?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserAccounts")
 
   @@unique([provider, providerAccountId])
 }
@@ -115,8 +130,8 @@ model DatabaseSchema {
 }
 
 model ApiRoute {
-  id          String   @id @default(cuid())
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id          String     @id @default(cuid())
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId   String
   method      HttpMethod
   path        String
@@ -126,14 +141,15 @@ model ApiRoute {
   query       Json?
   body        Json?
   responses   Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  openApiPath String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model ApiSpec {
   id          String   @id @default(cuid())
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  projectId   String
+  projectId   String   @unique
   title       String
   description String?
   version     String   @default("1.0.0")
