@@ -1,108 +1,136 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+// app/(protected)/projects/[id]/apis/page.tsx
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
-import RapiDocComponent from "@/components/ui/rapidoc/RapiDocComponent";
-import ApiRouteForm from "@/components/ui/forms/ApiRouteForm";
-import ApiRouteList from "@/components/ui/lists/ApiRouteList";
-import type { ApiRoute } from "@/types/base";
+import { useEffect, useState } from "react";
+import { ScalarApiDocs } from "@/components/apis/ScalarApiDocs";
+import { toast } from "react-hot-toast";
+import {
+  fetchApiRoutes,
+  selectApiRoutesByProject,
+  selectApiRoutesStatus,
+  createApiRoute,
+  updateApiRoute,
+  deleteApiRoute,
+  rebuildOpenApiSpec,
+  fetchOpenApiSpec,
+} from "@/lib/store/apiRoutes";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import type {
+  ApiRoute,
+  ApiRouteCreatePayload,
+  ApiRoutePayload,
+} from "@/types/entities/apiRoutes";
+import { useProjectId } from "@/hooks/useProjectId";
+import { Loading } from "@/components/ui/Loading";
+import { P } from "@/components/ui/Typography";
+import ApiRouteCard from "@/components/apis/ApiRouteCard";
+import ApiRouteDialog from "@/components/ui/modals/ApiRouteDialogue";
+import { Button } from "@/components/ui/button";
+import { ApiDocs } from "@/components/apis/ApiDocs";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ApiManagementPage() {
-  const { projectId } = useParams();
-  const [spec, setSpec] = useState("");
-  const [routes, setRoutes] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const fetchSpecUrl = async () => {
-    try {
-      const res = await fetch(`/api/projects/${projectId}/openapi-spec`);
+export default function ApiRoutesPage() {
+  const dispatch = useAppDispatch();
+  const projectId = useProjectId();
 
-      // If the route failed (404/500) bail out gracefully
-      if (!res.ok) {
-        console.warn("No OpenAPI spec yet:", res.status, res.statusText);
-        setSpec(""); // blank == “not ready”
-        return;
-      }
+  const apiRoutes = useAppSelector((s) =>
+    selectApiRoutesByProject(s, projectId),
+  );
+  const status = useAppSelector((s) => selectApiRoutesStatus(s, projectId));
 
-      // Parse the JSON safely
-      const { specUrl } = (await res.json()) as { specUrl?: string | null };
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<ApiRoute | null>(null);
 
-      if (specUrl) {
-        setSpec(specUrl); // RapiDoc will fetch this URL itself
-      } else {
-        console.info("Project has no specUrl yet");
-        setSpec("");
-      }
-    } catch (err) {
-      console.error("Error fetching OpenAPI spec:", err);
-      setSpec("");
-    }
-  };
-  const fetchRoutes = async () => {
-    const res = await fetch(`/api/projects/${projectId}/apis`);
-    const data = await res.json();
-    setRoutes(data);
-  };
-
-  const updateRouteUI = async () => {
-    fetchSpecUrl();
-    fetchRoutes();
-  };
+  // Load routes + trigger spec rebuild on mount
   useEffect(() => {
-    if (projectId) {
-      fetchSpecUrl();
-      fetchRoutes();
+    if (status === "idle") {
+      dispatch(fetchOpenApiSpec({ projectId }));
+      dispatch(fetchApiRoutes(projectId));
+      dispatch(rebuildOpenApiSpec({ projectId }));
     }
-  }, [projectId]);
+  }, [dispatch, projectId, status]);
 
-  const handleUpdateRoute = async (updatedRoute: ApiRoute) => {
-    await fetch(`/api/projects/${projectId}/apis/${updatedRoute.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedRoute),
-    });
-    await fetchRoutes();
-    await fetchSpecUrl();
+  const handleSave = async (data: ApiRouteCreatePayload | ApiRoutePayload) => {
+    try {
+      if (editingRoute?.id) {
+        // PATCH existing
+        await dispatch(
+          updateApiRoute({ ...data, id: editingRoute.id }),
+        ).unwrap();
+        toast.success("API route updated");
+      } else {
+        // POST new
+        await dispatch(createApiRoute({ projectId, ...data })).unwrap();
+        // rebuild spec after create
+        await dispatch(rebuildOpenApiSpec({ projectId })).unwrap();
+        toast.success("API route created");
+      }
+      setDialogOpen(false);
+      setEditingRoute(null);
+      // re‑fetch to pick up changes
+      dispatch(fetchApiRoutes(projectId));
+    } catch (err: any) {
+      toast.error(`Error: ${err.message || err}`);
+    }
   };
 
-  const handleDeleteRoute = async (routeId: string) => {
-    await fetch(`/api/projects/${projectId}/apis/${routeId}`, {
-      method: "DELETE",
-    });
-    await fetchRoutes();
-    await fetchSpecUrl();
+  const handleDelete = async (id: string) => {
+    // console.log("Deleting route", id);
+    try {
+      await dispatch(deleteApiRoute({ id })).unwrap();
+      toast.success("API route deleted");
+      dispatch(fetchApiRoutes(projectId));
+    } catch (err: any) {
+      toast.error(`Delete failed: ${err.message}`);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        API Management
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className={
-            showForm
-              ? "ct-btn float-end bg-red-800 text-white text-base rounded border border-gray-400"
-              : "ct-btn float-end bg-blue-900 text-white text-base rounded border border-amber-200"
-          }
-        >
-          {showForm ? "Cancel" : "Add API Route"}
-        </button>
-      </h1>
+    <>
+      {status === "loading" && <Loading />}
+      {status === "failed" && <P>Error loading API routes.</P>}
 
-      {showForm && (
-        <ApiRouteForm updateRouteUI={updateRouteUI} onCancel={() => null} />
-      )}
-      <ApiRouteList
-        routes={routes}
-        updateRouteUI={updateRouteUI}
-        // updateRoutes={handleUpdateRoute}
-        // onDeleteRoute={() => handleDeleteRoute("1")}
+      <div className="mb-4 flex items-center">
+        <h2 className="flex-1 text-2xl font-semibold">API Routes</h2>
+        <Button
+          variant="secondary"
+          size="sm"
+          color="success"
+          onClick={() => {
+            setEditingRoute(null);
+            setDialogOpen(true);
+          }}
+        >
+          + New Route
+        </Button>
+      </div>
+
+      <div className="grid gap-4">
+        {apiRoutes.map((route) => (
+          <ApiRouteCard
+            key={route.id}
+            api={route}
+            onEdit={() => {
+              setEditingRoute(route);
+              setDialogOpen(true);
+            }}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+
+      <ApiRouteDialog
+        open={dialogOpen}
+        initialData={editingRoute ?? undefined}
+        onSaveAction={handleSave}
+        onCloseAction={() => setDialogOpen(false)}
+        doRefreshAction={() => dispatch(fetchApiRoutes(projectId))}
       />
-      {spec ? (
-        <RapiDocComponent specUrl={spec} />
+      {apiRoutes.length > 0 ? (
+        <ScalarApiDocs specUrl={`/api/projects/${projectId}/openapi-spec`} />
       ) : (
-        <p className="text-gray-500">Loading OpenAPI spec...</p>
+        <Skeleton className="mt-10" />
       )}
-    </div>
+    </>
   );
 }

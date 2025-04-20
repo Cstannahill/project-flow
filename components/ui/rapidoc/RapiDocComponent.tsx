@@ -1,29 +1,24 @@
-// components/api/RapiDocComponent.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
-import "rapidoc";
+import dynamic from "next/dynamic";
 
-type Props = {
-  specUrl: string;
-};
+// dynamically import the Web‑Component **client‑side only**
+const Rapidoc = dynamic(
+  async () => {
+    await import("rapidoc"); // registers <rapi-doc>
+    return (props: any) => <rapi-doc {...props} />;
+  },
+  { ssr: false }
+);
 
-export default function RapiDocComponent({ specUrl }: Props) {
-  const ref = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.setAttribute("spec-url", specUrl);
-    }
-  }, [specUrl]);
-
+export default function RapiDocComponent({ specUrl }: { specUrl: string }) {
   return (
-    <rapi-doc
-      ref={ref}
+    <Rapidoc
+      spec-url={specUrl}
       theme="light"
       renderStyle="read"
-      show-header={false}
-      allowTry={true}
+      allowTry
       style={{ width: "100%", height: "90vh" }}
     />
   );

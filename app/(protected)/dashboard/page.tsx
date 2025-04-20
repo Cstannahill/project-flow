@@ -1,48 +1,60 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
-import { store } from "@/lib/store/store";
-import { fetchProjects } from "@/lib/store/projectThunks";
-import { setSelectedProjectId } from "@/lib/store/userSlice";
-// import { setUserProject } from "@/lib/store/userThunks";
-import { RootState } from "@/lib/store/store";
 import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { fetchProjects, createProject } from "@/lib/store/projects/thunks";
+import {
+  selectProjects,
+  selectProjectsStatus,
+  selectProjectsError,
+  setCurrentProject,
+} from "@/lib/store/projects"; // ← use the selectors file
+import { persistSelectedProjectId } from "@/lib/store/users/thunks";
 import CreateProjectModal from "@/components/ui/modals/CreateProjectModal";
 import { ProjectComponent } from "@/components/ProjectComponent";
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-};
+import { toast } from "react-hot-toast";
+import { P } from "@/components/ui/Typography";
 
 export default function DashboardPage() {
-  const [localPrState, setLocalPState] = useState<Project[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const router = useRouter();
   const dispatch = useAppDispatch();
-  const { projects, loading } = useAppSelector((state) => state.project);
-  // const { user } = useAppSelector((state) => state.user);
+  const router = useRouter();
 
+  const projects = useAppSelector(selectProjects);
+  const status = useAppSelector(selectProjectsStatus);
+  const error = useAppSelector(selectProjectsError);
+
+  const [showModal, setShowModal] = useState(false);
+
+  // Load projects once
   useEffect(() => {
-    // For example, only fetch if we have 0 projects
-    if (!projects.length && !loading) {
-      dispatch(fetchProjects());
-    }
-  }, [dispatch, projects, loading]);
-  const handleSelectProject = (id: string) => {
-    dispatch(setSelectedProjectId(id));
-    // dispatch();
-    router.push(`/projects/${id}`);
-  };
-  const handleNewProject = () => {
-    setShowModal(true);
+    if (status === "idle") dispatch(fetchProjects());
+  }, [status, dispatch]);
+
+  // When user clicks a project
+  const handleSelect = (projId: string) => {
+    const proj = projects.find((p) => p.id === projId) ?? null;
+    dispatch(setCurrentProject(proj));
+    dispatch(persistSelectedProjectId(projId));
+    router.push(`/projects/${projId}`);
   };
 
-  const handleSaveProject = (newProject: Project) => {
-    setShowModal(false);
+  // When user creates a new project
+  const handleCreate = async (newProj: {
+    title: string;
+    description: string;
+  }) => {
+    // grab the created project from the thunk’s return value
+    try {
+      const created = await dispatch(createProject(newProj)).unwrap();
+      dispatch(setCurrentProject(created));
+      dispatch(persistSelectedProjectId(created.id));
+      toast.success(`Project "${created.title}" created successfully!`);
+      setShowModal(false);
+      router.push(`/projects/${created.id}`);
+    } catch (error: any) {
+      toast.error(`Error creating project: ${error.message}`);
+    }
   };
 
   const mapProject = (project: any) => {
@@ -51,53 +63,55 @@ export default function DashboardPage() {
         <ProjectComponent
           key={project.id}
           id={project.id}
-          name={project.name}
           createdAt={project.createdAt}
           updatedAt={project.updatedAt}
           title={project.title}
           description={project.description}
-          selectProjectHandler={handleSelectProject}
+          selectProjectHandler={handleSelect}
+          techStack={project.techStack}
         />
       </React.Fragment>
     );
   };
 
+  if (status === "loading")
+    return <P className="text-center text-sm">Loading projects...</P>;
+  if (status === "failed") return <P>Error: {error}</P>;
+
   return (
-    <main className="max-w-5xl mx-auto px-4 py-10">
-      <div className="flex justify-between items-center mb-8">
+    <main className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mb-8 flex items-center justify-between">
         <h1 className="text-3xl font-bold">My Projects</h1>
         <button
-          onClick={handleNewProject}
-          className="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700"
+          onClick={() => setShowModal(true)}
+          className="rounded bg-blue-600 px-5 py-2 text-white hover:bg-blue-700"
         >
           + New Project
         </button>
       </div>
 
-      {loading ? (
-        <p className="text-center text-sm">Loading projects...</p>
-      ) : projects.length === 0 ? (
-        <div className="text-center space-y-2">
-          <p className="text-sm">
+      {projects.length === 0 ? (
+        <div className="space-y-2 text-center">
+          <P className="text-sm">
             {`It looks like you don't have any projects yet.`}
-          </p>
+          </P>
           <button
-            onClick={handleNewProject}
+            onClick={() => setShowModal(true)}
             className="mt-2 text-sm underline hover:text-blue-600"
           >
             Create your first project
           </button>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
           {projects.map(mapProject)}
         </div>
       )}
 
       {showModal && (
         <CreateProjectModal
-          onClose={() => setShowModal(false)}
-          onSave={handleSaveProject}
+          onCloseAction={() => setShowModal(false)}
+          onSaveAction={handleCreate}
         />
       )}
     </main>

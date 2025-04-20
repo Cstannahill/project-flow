@@ -7,7 +7,7 @@ import { Divider } from "@/components/ui/Divider";
 import BrandHeader from "@/components/BrandHeader";
 import Image from "next/image";
 import LogoutButton from "../LogoutButton";
-import { store } from "@/lib/store/store";
+// import { store } from "@/lib/store/store";
 import { ThemeChanger } from "../ThemeChanger";
 
 type LayoutMode = "top" | "side" | "both";
@@ -189,8 +189,8 @@ export default function Navbar({
               <LogoutButton />
               <Divider spacing={1} className="my-0" />
               <button
-                className="text-center ct-btn btn btn-md bg-linear-to-r from-cyan-100 via-blue-300 to-indigo-400 text-sm text-gray-800 hover:text-gray-500"
-                onClick={() => console.log(store.getState())}
+                className="text-center ct-btn btn btn-md bg-linear-to-r from-cyan-100 via-blue-300 to-indigo-400 text-sm text-brand hover:text-gray-500"
+                // onClick={() => console.log(store.getState())}
               >
                 State
               </button>

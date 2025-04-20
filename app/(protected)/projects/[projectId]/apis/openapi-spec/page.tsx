@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import safeStringify from "fast-safe-stringify";
 
 export default function OpenApiSpecPage() {
   const { projectId } = useParams();
@@ -17,10 +18,10 @@ export default function OpenApiSpecPage() {
   }, [projectId]);
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-xl font-semibold mb-4">OpenAPI Spec JSON</h1>
-      <pre className="bg-neutral-100 dark:bg-neutral-800 text-sm p-4 rounded overflow-auto">
-        {spec ? JSON.stringify(spec, null, 2) : "Loading..."}
+    <div className="mx-auto max-w-4xl p-6">
+      <h1 className="mb-4 text-xl font-semibold">OpenAPI Spec JSON</h1>
+      <pre className="overflow-auto rounded bg-neutral-100 p-4 text-sm dark:bg-neutral-800">
+        {spec ? safeStringify(spec) : "Loading..."}
       </pre>
     </div>
   );

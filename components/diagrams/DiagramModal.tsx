@@ -3,14 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { P } from "../ui/Typography";
 
 type Props = {
   content: string;
-  onClose: () => void;
+  onCloseAction: () => void;
   title?: string;
 };
 
-export default function DiagramModal({ content, onClose, title }: Props) {
+export default function DiagramModal({ content, onCloseAction, title }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgHtml, setSvgHtml] = useState("");
   const [error, setError] = useState("");
@@ -91,7 +92,7 @@ export default function DiagramModal({ content, onClose, title }: Props) {
               PNG
             </button>
             <button
-              onClick={onClose}
+              onClick={onCloseAction}
               className="text-gray-500 hover:text-red-600"
               title="Close"
             >
@@ -101,7 +102,7 @@ export default function DiagramModal({ content, onClose, title }: Props) {
         </div>
 
         {error ? (
-          <p className="text-red-500 italic text-sm">{error}</p>
+          <P className="text-red-500 italic text-sm">{error}</P>
         ) : (
           <div
             ref={containerRef}

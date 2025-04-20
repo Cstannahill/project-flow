@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
     data: { name, email, password: hashedPassword },
   });
 
+  await prisma.userPreferences.create({
+    data: { userId: user.id }, // uses the model defaults
+  });
+
   return NextResponse.json(
     { message: "User created", userId: user.id },
     { status: 201 }

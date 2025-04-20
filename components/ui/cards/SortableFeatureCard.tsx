@@ -8,27 +8,15 @@ import {
   TrashIcon,
   Bars3Icon,
 } from "@heroicons/react/24/outline";
-
-const typeOptions = ["Frontend", "Backend", "API", "Database"];
-const statusOptions = ["Planned", "In Progress", "Complete"];
-const predefinedTags = ["MVP", "Bug", "UI", "UX", "Enhancement"];
-
-const tagColors: Record<string, string> = {
-  MVP: "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300",
-  Bug: "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300",
-  UI: "bg-purple-100 text-purple-800 dark:bg-purple-800/20 dark:text-purple-300",
-  UX: "bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-300",
-  Enhancement:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300",
-};
-
-const statusColors: Record<string, string> = {
-  Planned: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100",
-  "In Progress":
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300",
-  Complete:
-    "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300",
-};
+import {
+  predefinedTags,
+  statusColors,
+  statusOptions,
+  tagColors,
+  typeOptions,
+} from "@/lib/staticAssets";
+import { P } from "../Typography";
+import safeStringify from "fast-safe-stringify";
 
 type SortableFeatureCardProps = {
   feature: {
@@ -79,7 +67,7 @@ export default function SortableFeatureCard({
       const res = await fetch(`/api/projects/${projectId}/features`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: safeStringify(form),
       });
       updated = await res.json();
     } else {
@@ -88,7 +76,7 @@ export default function SortableFeatureCard({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: safeStringify(form),
         }
       );
       updated = await res.json();
@@ -217,14 +205,14 @@ export default function SortableFeatureCard({
           <div className="flex justify-between items-start gap-2">
             <div className="flex-1">
               <h3 className="text-lg font-semibold">{feature.title}</h3>
-              <p className="text-sm opacity-70 mt-1">{feature.description}</p>
+              <P className="text-sm opacity-70 mt-1">{feature.description}</P>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {feature.status && (
                   <span
                     className={`text-xs font-medium px-2 py-1 rounded-full ${
                       statusColors[feature.status] ??
-                      "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                      "bg-gray-100 text-brand00 dark:bg-gray-700 dark:text-gray-100"
                     }`}
                   >
                     {feature.status}
@@ -289,7 +277,7 @@ export default function SortableFeatureCard({
                     await fetch(`/api/projects/${projectId}/features`, {
                       method: "DELETE",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ featureId: feature.id }),
+                      body: safeStringify({ featureId: feature.id }),
                     });
                     onDelete?.(feature.id);
                   }

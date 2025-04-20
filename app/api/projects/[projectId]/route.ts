@@ -25,27 +25,30 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: Promise<{ projectId: string }> }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const { params } = await context;
   const { projectId } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const requ = await req.json();
-  const title = requ?.title;
-  const description = requ?.description;
-  const diagram = requ?.diagram;
-  const techStack = requ?.stack;
-
+  const updateData = await req.json();
+  const title = updateData?.title;
+  const description = updateData?.description;
+  const diagram = updateData?.diagram;
+  const techStack = updateData?.techStack;
+  const data: any = {};
+  if (title) data.title = title;
+  if (description) data.description = description;
+  if (techStack) data.techStack = techStack;
+  console.log("Update data:", data);
   const updated = await prisma.project.update({
     where: { id: projectId },
     data: {
       ...(title && { title }),
       ...(description && { description }),
-      ...(diagram && { diagram }),
+      // ...(diagram && { diagram }),
       ...(techStack && { techStack }),
     },
   });

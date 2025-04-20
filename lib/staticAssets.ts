@@ -1,5 +1,4 @@
 "use client";
-import type { TechItem } from "@/types/base";
 import { use } from "react";
 import Image from "next/image";
 
@@ -12,6 +11,18 @@ export const techFields = [
   { label: "Hosting", key: "hosting" },
   { label: "API Style", key: "api" },
   { label: "State Management", key: "state" },
+];
+
+export const sqlTypes = [
+  "INT",
+  "VARCHAR",
+  "TEXT",
+  "BOOLEAN",
+  "DATE",
+  "TIMESTAMP",
+  "DECIMAL",
+  "FLOAT",
+  "UUID",
 ];
 
 export const techOptions: Record<
@@ -264,4 +275,77 @@ export const techOptions: Record<
     },
     { tool: "None", language: "", docs: "", icon: "/icons/none.png" },
   ],
+};
+
+export const typeOptions = [
+  "Frontend",
+  "Backend",
+  "API",
+  "Database",
+  "Auth",
+  "DevOps",
+  "Testing",
+  "Design",
+  "Security",
+  "Integration",
+];
+
+// Status workflow options
+export const statusOptions = ["Planned", "In Progress", "Complete"];
+
+// Expanded predefined tags for feature categorization
+export const predefinedTags = [
+  "MVP",
+  "Bug",
+  "UI",
+  "UX",
+  "Enhancement",
+  "Performance",
+  "Research",
+  "Spike",
+  "Maintenance",
+  "Chore",
+];
+export const typeColors: Record<string, string> = {
+  Frontend: "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300",
+  Backend:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300",
+  API: "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300",
+  Database:
+    "bg-purple-100 text-purple-800 dark:bg-purple-800/20 dark:text-purple-300",
+  Auth: "bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-300",
+  DevOps:
+    "bg-emerald-100 text-emerald-800 dark:bg-emerald-800/20 dark:text-emerald-300",
+  Testing: "bg-pink-100 text-pink-800 dark:bg-pink-800/20 dark:text-pink-300",
+  Design: "bg-teal-100 text-teal-800 dark:bg-teal-800/20 dark:text-teal-300",
+  Security: "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300",
+  Integration:
+    "bg-orange-100 text-orange-800 dark:bg-orange-800/20 dark:text-orange-300",
+};
+
+// Tag colors mapping (Tailwind classes)
+export const tagColors: Record<string, string> = {
+  MVP: "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300",
+  Bug: "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300",
+  UI: "bg-purple-100 text-purple-800 dark:bg-purple-800/20 dark:text-purple-300",
+  UX: "bg-indigo-100 text-indigo-800 dark:bg-indigo-800/20 dark:text-indigo-300",
+  Enhancement:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300",
+  Performance:
+    "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300",
+  Research: "bg-pink-100 text-pink-800 dark:bg-pink-800/20 dark:text-pink-300",
+  Spike:
+    "bg-violet-100 text-violet-800 dark:bg-violet-800/20 dark:text-violet-300",
+  Maintenance: "bg-gray-100 text-brand dark:bg-gray-800/20 dark:text-gray-300",
+  Chore:
+    "bg-orange-100 text-orange-800 dark:bg-orange-800/20 dark:text-orange-300",
+};
+
+// Status badges colors mapping
+export const statusColors: Record<string, string> = {
+  Planned: "bg-gray-100 text-brand00 dark:bg-gray-700 dark:text-gray-100",
+  "In Progress":
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300",
+  Complete:
+    "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300",
 };

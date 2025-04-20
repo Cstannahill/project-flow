@@ -1,21 +1,31 @@
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import IconButton from "./IconButton";
+import { Button } from "./ui/button";
+import { Sun, Moon } from "lucide-react";
 
 export const ThemeChanger = () => {
   const { theme, setTheme } = useTheme();
   const isDarkMode = theme === "dark";
   return isDarkMode ? (
-    <IconButton
-      btnClass="bg-gradient-glow"
-      iconSrc="/icons/other/sun.svg"
+    <Button
+      color="success"
+      suppressHydrationWarning
       onClick={() => setTheme("light")}
-    />
+    >
+      <Sun suppressHydrationWarning className="mx-4" size={20} color={"gold"} />
+    </Button>
   ) : (
-    <IconButton
-      btnClass="bg-linear-to-r from-gray-300 via-gray-500 to-gray-700"
-      iconSrc="/icons/other/moon.svg"
+    <Button
+      color="secondary"
+      suppressHydrationWarning
       onClick={() => setTheme("dark")}
-    />
+    >
+      <Moon
+        className="mx-4"
+        suppressHydrationWarning
+        size={20}
+        color="silver"
+      />
+    </Button>
   );
 };

@@ -4,19 +4,17 @@ import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import TopNav from "../navigation/TopNav";
 import SideNav from "../navigation/SideNav";
+import SideNavBar from "../navigation/sidebars/SideBarNav";
+import SideNavBarAlt from "../navigation/sidebars/SideBarNavAlt";
 
 export default function NavigationWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { projectId: rawProjectId } = useParams();
+  const { projectId } = useParams();
   const pathname = usePathname();
   const [navItems, setNavItems] = useState([{ label: "Home", href: "/" }]);
-
-  const projectId = Array.isArray(rawProjectId)
-    ? rawProjectId[0]
-    : rawProjectId;
 
   useEffect(() => {
     if (!projectId) return;
@@ -37,7 +35,7 @@ export default function NavigationWrapper({
     <>
       <TopNav />
       <main className="flex">
-        {sidebarActive && <SideNav items={navItems} />}
+        {sidebarActive && <SideNavBarAlt />}
         <section className="flex-1 px-4 py-4">{children}</section>
       </main>
     </>

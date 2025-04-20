@@ -4,8 +4,8 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/store/hooks";
-import { login } from "@/lib/store/userSlice";
 import Image from "next/image";
+import { hydrateUserSession } from "@/lib/store/users/thunks";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,6 +25,7 @@ export default function LoginPage() {
     if (result?.error) {
       alert(result.error);
     } else {
+      dispatch(hydrateUserSession());
       router.push("/dashboard");
       router.refresh();
     }

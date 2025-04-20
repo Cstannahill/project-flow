@@ -4,47 +4,36 @@ import React, { use, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Provider } from "react-redux";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
-import { store } from "@/lib/store/store";
-import { login } from "@/lib/store/userSlice";
-import NavbarWrapper from "@/components/ui/NavbarWrapper";
-import { useTheme } from "next-themes";
+import { store } from "@/lib/store";
+import { fetchProjects, setCurrentProject } from "@/lib/store/projects";
+
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { usePathname } from "next/navigation";
 import NavigationWrapper from "./NavigationWrapper";
-import { hydrateUserSession } from "@/lib/store/userThunks";
-import { setCurrentProject } from "@/lib/store/projectThunks";
+import { hydrateUserSession } from "@/lib/store/users/thunks";
 
-function AuthSync({ session }: { session: any }) {
+function AuthSync() {
   const dispatch = useAppDispatch();
-  const userProj = useAppSelector(
-    (state) => state?.user?.currentUser?.selectedProjectId
-  );
+  const prefs = useAppSelector((s) => s?.user?.preferences);
+  const projectsStatus = useAppSelector((s) => s?.project?.status);
   useEffect(() => {
-    dispatch(hydrateUserSession(session));
-  }, [session, dispatch]);
+    dispatch(hydrateUserSession());
+  }, [dispatch]);
+  useEffect(() => {
+    if (prefs?.selectedProjectId) {
+      // 2a) set the currentProjectId in your project slice
+      dispatch(setCurrentProject(prefs.selectedProjectId));
 
-  useEffect(() => {
-    if (session) {
-      // dispatch(setCurrentProject(userProj));
+      // 2b) trigger a fetchProjects() if you haven’t already
+      //     (so that you have the projects list loaded before selecting)
+      if (projectsStatus === "idle") {
+        dispatch(fetchProjects());
+      }
+      // 2c) optionally, navigate there automatically
+      // router.replace(`/projects/${prefs.selectedProjectId}/features`);
     }
-  }, [userProj, session, dispatch]);
-
+  }, [prefs?.selectedProjectId, dispatch, projectsStatus]);
   return null;
-}
-
-function NextThemeProviderWrapper({ children }: { children: React.ReactNode }) {
-  const { resolvedTheme } = useTheme();
-
-  return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      {children}
-    </NextThemesProvider>
-  );
 }
 
 export default function ClientProvider({
@@ -54,20 +43,23 @@ export default function ClientProvider({
   children: React.ReactNode;
   session: any;
 }) {
-  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
-
   const isSidebarRoute =
     pathname.startsWith("/dashboard") || pathname.startsWith("/projects");
 
   return (
-    <NextThemeProviderWrapper>
+    <NextThemesProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       <Provider store={store}>
-        <AuthSync session={session} />
+        <AuthSync />
         <NavigationWrapper>
           <SessionProvider session={session}>{children}</SessionProvider>
         </NavigationWrapper>
       </Provider>
-    </NextThemeProviderWrapper>
+    </NextThemesProvider>
   );
 }

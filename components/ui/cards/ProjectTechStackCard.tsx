@@ -1,4 +1,3 @@
-import { Paper } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
@@ -20,6 +19,7 @@ export default function ProjectTechStackCard({ item }: Props) {
     <FloatingCard
       className="flex flex-row gap-4 p-4 items-start dark:bg-stone-800 dark:text-white bg-white text-gray-900 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-300 ease-in-out"
       shadow="elevated"
+      hoverEffect={false}
     >
       <div className="w-12 h-12 shrink-0 flex flex-col items-center justify-center">
         <Image

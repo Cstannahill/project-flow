@@ -13,3 +13,15 @@ declare namespace JSX {
     };
   }
 }
+declare namespace JSX {
+  interface IntrinsicElements {
+    "api-reference": React.DetailedHTMLProps<
+      React.HTMLAttributes<HTMLElement>,
+      HTMLElement
+    > & {
+      "data-url"?: string;
+      "data-proxy-url"?: string;
+      "data-configuration"?: string;
+    };
+  }
+}
