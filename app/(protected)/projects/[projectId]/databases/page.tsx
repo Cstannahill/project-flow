@@ -1,14 +1,11 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
+import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import { saveAs } from "file-saver";
 import { Canvg } from "canvg";
 import { v4 as uuid } from "uuid";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth/auth";
-import prisma from "@/lib/prisma";
 import { generateERDiagram } from "@/lib/erDiagram";
 import { exportSchema } from "@/lib/exportSchema";
 import { parseUploadedSchema } from "@/lib/schemaParsers";
@@ -31,12 +28,12 @@ import ERDiagramView from "@/components/databases/ERDiagramView";
 import DatabaseActions, {
   DatabaseActionProps,
 } from "@/components/databases/DatabaseActions";
+import { store } from "@/lib/store";
 
 export default function DatabaseTab() {
   const dispatch = useAppDispatch();
   const { projectId } = useParams() as { projectId?: string };
 
-  // Redux selectors
   const schemas = useAppSelector((s) =>
     selectDatabasesByProject(s, projectId ?? ""),
   );
@@ -44,14 +41,12 @@ export default function DatabaseTab() {
     selectDatabaseStatusByProject(s, projectId ?? ""),
   );
 
-  // 1️⃣ Fetch schemas on initial mount when status is idle
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchDatabases(projectId ?? ""));
     }
   }, [dispatch, projectId, status]);
 
-  // Component state & refs
   const diagramRef = useRef<HTMLDivElement>(null);
   const [schema, setSchema] = useState<SchemaData>({
     tables: [],
@@ -72,7 +67,6 @@ export default function DatabaseTab() {
   const [selectedSchemaId, setSelectedSchemaId] = useState<string | null>(null);
   const hasAutoLoaded = useRef(false);
 
-  // 2️⃣ Auto-load first schema once fetch succeeded
   useEffect(() => {
     if (
       status === "succeeded" &&
@@ -85,37 +79,22 @@ export default function DatabaseTab() {
     }
   }, [status, schemas, selectedSchemaId]);
 
-  // 3️⃣ Render Mermaid ER diagram when renderSchema changes
   useEffect(() => {
-    if (!renderSchema?.tables?.length) return;
-    if (
-      !renderSchema.tables[0]?.columns?.length ||
-      renderSchema.tables[0]?.columns[0]?.name === ""
-    )
-      return;
-    if (diagramRef.current) {
-      const def = generateERDiagram(renderSchema, {
-        theme: "dark",
-        title: "ER Diagram",
-      });
-      diagramRef.current.innerHTML = "";
-      mermaid
-        .render("er-diagram", def)
-        .then(({ svg }) => (diagramRef.current!.innerHTML = svg));
+    if (renderSchema?.tables?.length) {
+      setExpandedGroups(
+        Object.fromEntries(
+          renderSchema.tables.map((t) => [t?.name ?? "", true]),
+        ),
+      );
     }
-    setExpandedGroups(
-      Object.fromEntries(renderSchema.tables.map((t) => [t?.name ?? "", true])),
-    );
   }, [renderSchema]);
 
-  // Helper: Collapse/Expand
   const handleCollapseAll = () => {
     setExpandedGroups((prev) =>
       Object.fromEntries(Object.keys(prev).map((k) => [k, !prev?.[k]])),
     );
   };
 
-  // 🌩️ File drop handler
   const onFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDropError(null);
@@ -125,19 +104,20 @@ export default function DatabaseTab() {
       const parsed = await parseUploadedSchema(file);
       if (parsed?.tables?.length === 0)
         throw new Error("No tables found in uploaded schema");
-      const formatted = parsed.map((t: any) => ({
+      const formatted = parsed?.tables?.map((t: any) => ({
         id: uuid(),
         name: t?.name,
         columns: t?.columns?.map((c: any) => ({ ...c, id: uuid() })),
       }));
-      setSchema(formatted ?? { tables: [], relationships: [] });
+      const nextSchema = { tables: formatted, relationships: [] };
+      setSchema(nextSchema);
+      setRenderSchema(nextSchema);
       toast.success("Schema imported successfully");
     } catch (err: any) {
       toast.error(err?.message || "Failed to parse schema");
     }
   };
 
-  // 🗑️ Delete
   const handleDeleteSchema = async () => {
     if (!selectedSchemaId) return;
     try {
@@ -151,7 +131,6 @@ export default function DatabaseTab() {
     }
   };
 
-  // 💾 Save (update existing or create new)
   const updateExistingSchema = async () => {
     if (!selectedSchemaId) return;
     try {
@@ -163,7 +142,6 @@ export default function DatabaseTab() {
           data: schema,
         }),
       ).unwrap();
-
       await dispatch(fetchDatabases(projectId ?? ""));
       handleLoadSchema(selectedSchemaId);
       toast.success("Schema updated");
@@ -172,25 +150,35 @@ export default function DatabaseTab() {
     }
   };
 
-  const handleSaveSchema = () =>
-    selectedSchemaId ? updateExistingSchema() : setIsNamingOpen(true);
-
   const saveNewSchema = async (title: string) => {
     try {
       const created = await dispatch(
         createDatabase({ projectId: projectId ?? "", title, data: schema }),
       ).unwrap();
-      setSelectedSchemaId(created?.id ?? null);
+
+      // Force Redux state to refresh
+      await dispatch(fetchDatabases(projectId ?? "")).unwrap();
+
+      // Pull updated state from selector AFTER hydration
+      const updatedSchemas = selectDatabasesByProject(
+        store.getState(), // ⬅️ You’ll need to import `store` to access the current state
+        projectId ?? "",
+      );
+
+      const rehydrated = updatedSchemas.find((s) => s.id === created.id);
+      if (rehydrated) {
+        handleLoadSchema(rehydrated.id);
+        setSelectedSchemaId(rehydrated.id);
+      }
+
       toast.success("New schema created");
     } catch (err: any) {
       toast.error(err?.message);
     }
   };
 
-  // 📂 Load selected schema
   const handleLoadSchema = (id: string) => {
     const found = schemas?.find((s) => s?.id === id);
-    console.log("found", found);
     if (!found) return;
     const withIds: SchemaData = {
       ...found?.data,
@@ -206,7 +194,6 @@ export default function DatabaseTab() {
     setSelectedSchemaId(id);
   };
 
-  // 📤 Export schema
   const handleExport = () => {
     const output = exportSchema(schema, exportFormat);
     saveAs(
@@ -215,7 +202,6 @@ export default function DatabaseTab() {
     );
   };
 
-  // 📈 Export diagram
   const handleExportDiagram = async () => {
     const svg = diagramRef.current?.querySelector("svg");
     if (!svg) return;
@@ -241,64 +227,87 @@ export default function DatabaseTab() {
     }
   };
 
-  // ➕ Table & column helpers
-  const addTable = () =>
-    setSchema((prev) => ({
-      ...prev,
-      tables: [
-        ...(prev?.tables ?? []),
-        {
-          id: uuid(),
-          name: `Table${(prev?.tables?.length ?? 0) + 1}`,
-          columns: [],
-        },
-      ],
-    }));
-  const updateTable = (i: number, tbl: Table) =>
+  const addTable = () => {
+    const newTable = {
+      id: uuid(),
+      name: `Table${schema.tables.length + 1}`,
+      columns: [],
+    };
     setSchema((prev) => {
-      const copy = [...(prev?.tables ?? [])];
-      copy[i] = tbl;
-      return { ...(prev ?? {}), tables: copy };
-    });
-  const addColumn = (ti: number) => {
-    const tbl = schema?.tables?.[ti];
-    if (!tbl) return;
-    updateTable(ti, {
-      ...tbl,
-      columns: [
-        ...(tbl?.columns ?? []),
-        {
-          name: "",
-          type: "VARCHAR",
-          isPrimary: false,
-          isNullable: false,
-          isUnique: false,
-        },
-      ],
+      const updated = { ...prev, tables: [...prev.tables, newTable] };
+      setRenderSchema(updated);
+      setExpandedGroups((prevGroups) => ({
+        ...prevGroups,
+        [newTable.name]: true,
+      }));
+      return updated;
     });
   };
-  const toggleGroup = (name: string) =>
-    setExpandedGroups((prev) => ({ ...prev, [name]: !prev?.[name] }));
+
+  const updateTable = (i: number, updated: Table) => {
+    setSchema((prev) => {
+      const tables = [...prev.tables];
+      tables[i] = { ...updated };
+      return { ...prev, tables };
+    });
+  };
+  const addColumn = (ti: number) => {
+    setSchema((prev) => {
+      const newSchema = { ...prev };
+      const newTables = [...newSchema.tables];
+      const table = { ...newTables[ti] };
+
+      const newColumns = [...(table.columns ?? [])];
+      newColumns.push({
+        name: "",
+        type: "VARCHAR",
+        isPrimary: false,
+        isNullable: false,
+        isUnique: false,
+      });
+
+      table.columns = newColumns;
+      newTables[ti] = table;
+      newSchema.tables = newTables;
+      return newSchema;
+    });
+  };
   const updateColumn = (
     ti: number,
     ci: number,
     field: keyof Column,
     value: any,
   ) => {
-    const tbl = schema?.tables?.[ti];
-    const cols = [...(tbl?.columns ?? [])];
-    cols[ci] = { ...cols[ci], [field]: value };
-    updateTable(ti, { ...tbl, columns: cols } as Table);
-  };
-  const removeColumn = (ti: number, ci: number) => {
-    const tbl = schema?.tables?.[ti];
-    const cols = tbl?.columns?.filter((_, idx) => idx !== ci) ?? [];
-    updateTable(ti, { ...tbl, columns: cols } as Table);
+    setSchema((prev) => {
+      const newSchema = { ...prev };
+      const tables = [...newSchema.tables];
+      const table = { ...tables[ti] };
+      const columns = [...table.columns];
+      columns[ci] = { ...columns[ci], [field]: value };
+      table.columns = columns;
+      tables[ti] = table;
+      newSchema.tables = tables;
+      return newSchema;
+    });
   };
 
-  // Props for subcomponents
+  const removeColumn = (ti: number, ci: number) => {
+    setSchema((prev) => {
+      const newSchema = { ...prev };
+      const tables = [...newSchema.tables];
+      const table = { ...tables[ti] };
+      table.columns = table.columns.filter((_, idx) => idx !== ci);
+      tables[ti] = table;
+      newSchema.tables = tables;
+      return newSchema;
+    });
+  };
+
+  const toggleGroup = (name: string) =>
+    setExpandedGroups((prev) => ({ ...prev, [name]: !prev?.[name] }));
+
   const toolbarProps = {
-    onSaveSchema: handleSaveSchema,
+    onSaveSchema: saveNewSchema,
     onAddTable: addTable,
     onGenerateDiagram: () => setRenderSchema(schema),
     isNamingOpen,
@@ -337,9 +346,10 @@ export default function DatabaseTab() {
       <DatabaseActions {...databaseActionsProps} />
       <DatabaseToolbar {...toolbarProps} />
       <SchemaDropzone {...dropzoneProps} />
-
       <SchemaTableList {...tableListProps} />
-      {/* {schema?.tables?.length > 0 && <ERDiagramView schema={renderSchema} />} */}
+      <div className="mt-6 rounded-lg border border-zinc-700 bg-[#1b1916] p-4">
+        <ERDiagramView schema={renderSchema} />
+      </div>
     </>
   );
 }

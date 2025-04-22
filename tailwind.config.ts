@@ -12,6 +12,22 @@ const config: Config = {
   content: ["./**/*.{ts,tsx,js,jsx,md,mdx}"],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          background: "var(--brand-background)",
+          surface: "var(--brand-surface)",
+          accent: "var(--brand-accent)",
+          tertiary: "var(--brand-tertiary)",
+          vsdark: "var(--brand-vsdarker)",
+          vsdarker: "var(--brand-vsdarker)",
+
+          text: {
+            default: "var(--text-brand)",
+            secondary: "var(--text-brand-secondary)",
+            muted: "var(--text-muted)",
+          },
+        },
+      },
       fontFamily: {
         sans: ["var(--font-sans)", ...defaultTheme.fontFamily.sans],
         mono: ["var(--font-mono)", ...defaultTheme.fontFamily.mono],

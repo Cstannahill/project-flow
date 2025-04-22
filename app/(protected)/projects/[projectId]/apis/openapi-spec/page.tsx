@@ -1,9 +1,7 @@
-// app/(protected)/projects/[id]/openapi-spec/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import safeStringify from "fast-safe-stringify";
 
 export default function OpenApiSpecPage() {
   const { projectId } = useParams();
@@ -21,7 +19,7 @@ export default function OpenApiSpecPage() {
     <div className="mx-auto max-w-4xl p-6">
       <h1 className="mb-4 text-xl font-semibold">OpenAPI Spec JSON</h1>
       <pre className="overflow-auto rounded bg-neutral-100 p-4 text-sm dark:bg-neutral-800">
-        {spec ? safeStringify(spec) : "Loading..."}
+        {spec ? JSON.stringify(spec) : "Loading..."}
       </pre>
     </div>
   );

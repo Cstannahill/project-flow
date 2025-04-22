@@ -1,8 +1,12 @@
-import type { ApiRoute } from "@/types/entities/apiRoutes";
+import type {
+  ApiRoute,
+  ApiRouteCreatePayload,
+  ApiRoutePayload,
+} from "@/types/entities/apiRoutes";
 import { JsonDetailForm, type FieldConfig } from "./EditorField";
 import JsonEditor from "./JsonEditor";
 
-const apiFields: FieldConfig<ApiRoute>[] = [
+const apiFields: FieldConfig<ApiRoutePayload | ApiRouteCreatePayload>[] = [
   { name: "projectId", type: "hidden" },
   { name: "id", type: "hidden" },
   { name: "path", label: "Path", type: "text", placeholder: "/api/foo" },
@@ -32,7 +36,7 @@ const apiFields: FieldConfig<ApiRoute>[] = [
 export function JsonForm({ initial, onSave }: any) {
   return (
     <>
-      <JsonDetailForm<ApiRoute>
+      <JsonDetailForm<ApiRoutePayload | ApiRouteCreatePayload>
         fields={apiFields}
         initialData={initial}
         onSubmitAction={onSave}

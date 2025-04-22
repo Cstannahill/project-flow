@@ -5,6 +5,10 @@ export type RelationshipType =
   | "ManyToMany";
 
 export type Relationship = {
+  fromTable?: string;
+  toTable?: string;
+  fromColumn?: string;
+  toColumn?: string;
   source: string;
   target: string;
   type: RelationshipType;

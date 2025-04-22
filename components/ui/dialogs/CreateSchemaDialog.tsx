@@ -1,6 +1,6 @@
 import React, { Fragment, ReactNode, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Button } from "@/components/ui/forms/Button";
+import { Button } from "@/components/ui/button";
 import TextInput from "../forms/inputs/TextInput";
 export interface CreateSchemaDialogProps {
   open: boolean;
@@ -23,7 +23,7 @@ export const CreateSchemaDialog = ({
         className="fixed inset-0 z-50 flex items-center justify-center"
         onClose={onCancel}
       >
-        <Dialog.Panel className=" rounded p-6 w-full dialog-confirm-schema max-w-sm">
+        <Dialog.Panel className=" dialog-confirm-schema w-full max-w-sm rounded p-6">
           <Dialog.Title className="text-lg font-medium">
             Name your schema
           </Dialog.Title>
@@ -37,11 +37,11 @@ export const CreateSchemaDialog = ({
             />
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <button className="px-4 py-2 rounded border" onClick={onCancel}>
+            <button className="rounded border px-4 py-2" onClick={onCancel}>
               Cancel
             </button>
             <button
-              className="px-4 py-2 rounded bg-blue-600 text-white"
+              className="rounded bg-blue-600 px-4 py-2 text-white"
               onClick={() => {
                 if (nameDraft.trim()) {
                   onConfirm(nameDraft.trim());

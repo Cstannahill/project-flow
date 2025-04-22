@@ -2,23 +2,21 @@ import { P } from "@/components/ui/Typography";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="max-w-3xl text-center space-y-6">
-        <h1 className="text-4xl font-bold text-brand dark:text-gray-100">
+    <main className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="max-w-3xl space-y-6 text-center">
+        <h1 className="text-brand text-4xl font-bold dark:text-gray-100">
           Welcome to Project Planner
         </h1>
 
-        <P className="text-lg text-gray-600 dark:text-gray-400">
+        <P className="border-accent text-accent text-lg text-gray-600 dark:text-gray-400">
           Project Planner is a web-based tool built to help developers and
           creators visually map and manage their project ideas—from concept to
           full-stack implementation.
         </P>
 
         <div className="border-t border-gray-200 pt-6">
-          <h2 className="text-2xl font-semibold text-brand00 dark:text-gray-300 mb-2">
-            ✨ Core Features
-          </h2>
-          <ul className="text-left list-disc list-inside text-brand00 dark:text-gray-300 space-y-2">
+          <h2 className="mb-2 text-2xl font-semibold ">✨ Core Features</h2>
+          <ul className="text-accent list-inside list-disc space-y-2 text-left">
             <li>Create, edit, and manage multiple projects</li>
             <li>
               Define features, UI components, APIs, and database tables for each
@@ -47,7 +45,7 @@ export default function LandingPage() {
         <div className="mt-10">
           <a
             href="/login"
-            className="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+            className="inline-block rounded bg-blue-600 px-6 py-3 text-white transition hover:bg-blue-700"
           >
             Get Started
           </a>

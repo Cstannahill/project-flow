@@ -74,3 +74,19 @@ export const deleteProject = createAsyncThunk<
     return rejectWithValue((err as Error).message);
   }
 });
+
+// Fetch all projects (fulfilled payload is Project[], no undefined)
+export const getProjectById = createAsyncThunk<
+  Project, // returned type
+  string, // argument type
+  { rejectValue: string }
+>("projects/fetchProjects", async (projectId, { rejectWithValue }) => {
+  try {
+    const res = await fetch(`/api/projects/${projectId}`);
+    if (!res.ok) throw new Error("Failed to fetch projects");
+    const data = (await res.json()) as Project;
+    return data;
+  } catch (err) {
+    return rejectWithValue((err as Error).message);
+  }
+});

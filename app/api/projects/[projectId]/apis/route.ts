@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   const session = await getServerSession(authOptions);
@@ -24,7 +24,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   console.log("IN POST API ROUTE", projectId);

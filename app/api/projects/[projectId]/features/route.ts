@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   const session = await getServerSession(authOptions);
@@ -24,7 +24,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   const session = await getServerSession(authOptions);
@@ -38,7 +38,7 @@ export async function POST(
   if (!title || !type) {
     return NextResponse.json(
       { error: "Missing required fields" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -61,7 +61,7 @@ export async function POST(
 
 export async function PATCH(
   req: NextRequest,
-  params: Promise<{ projectId: string }>
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   const session = await getServerSession(authOptions);
@@ -81,8 +81,8 @@ export async function PATCH(
       prisma.feature.update({
         where: { id: featureId },
         data: { order: index },
-      })
-    )
+      }),
+    ),
   );
 
   return NextResponse.json({ success: true, updated: updates.length });
@@ -90,7 +90,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  params: Promise<{ projectId: string }>
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
   const session = await getServerSession(authOptions);

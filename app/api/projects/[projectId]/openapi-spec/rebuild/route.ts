@@ -4,7 +4,7 @@ import { generateOpenApiSpec } from "@/lib/openapi/generator";
 
 export async function POST(
   req: Request,
-  { params }: { params: { projectId: string } },
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const { projectId } = await params;
 

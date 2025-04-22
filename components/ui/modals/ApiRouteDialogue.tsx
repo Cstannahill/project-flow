@@ -18,14 +18,20 @@ import { Editor } from "@monaco-editor/react";
 import { Label } from "../label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProjectId } from "@/hooks/useProjectId";
-import type { ApiRoutePayload } from "@/types/entities/apiRoutes";
+import type {
+  ApiRoute,
+  ApiRouteCreatePayload,
+  ApiRoutePayload,
+} from "@/types/entities/apiRoutes";
 
 interface Props {
   open: boolean;
   onCloseAction: () => void;
-  initialData?: ApiRoutePayload;
+  initialData?: ApiRoutePayload | ApiRouteCreatePayload;
   doRefreshAction: () => void;
-  onSaveAction: (data: ApiRoutePayload) => void;
+  onSaveAction: (
+    data: ApiRoutePayload | ApiRouteCreatePayload | null,
+  ) => Promise<void>;
 }
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
@@ -72,7 +78,7 @@ export default function ApiRouteDialog({
   const [tab, setTab] = useState<"details" | "json">("details");
 
   // initialize form state by merging defaults + initialData
-  const [data, setData] = useState<ApiRoutePayload>({
+  const [data, setData] = useState<ApiRoutePayload | ApiRouteCreatePayload>({
     ...defaults,
     ...initialData,
   });

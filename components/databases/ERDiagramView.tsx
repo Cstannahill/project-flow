@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+"use client";
+import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
 import type { SchemaData } from "@/types/entities/databases";
+import { generateERDiagram } from "@/lib/erDiagram";
 
 interface ERDiagramViewProps {
   schema: SchemaData;
@@ -13,86 +15,61 @@ mermaid.initialize({
   securityLevel: "loose",
 });
 
-/**
- * Sanitizes an identifier for mermaid: replaces non-word characters,
- * prefixes with _ if it starts with a digit.
- */
-function sanitizeId(str: string = ""): string {
-  let s = str.replace(/[^A-Za-z0-9_]/g, "_");
-  if (/^[0-9]/.test(s)) s = `_${s}`;
-  return s;
-}
-
 export default function ERDiagramView({ schema }: ERDiagramViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [definition, setDefinition] = useState<string | null>(null);
 
   useEffect(() => {
     // Guard: need at least one table with a named column
-    if (!schema?.tables?.length) return;
-    const first = schema.tables?.[0];
-    if (!first?.columns?.length || first.columns?.[0]?.name === "") return;
+    if (!schema?.tables?.length || !schema.tables[0]?.columns?.length) return;
 
-    // Build ER diagram definition
-    let definition = `erDiagram\n`;
-    try {
-      // Tables
-      schema?.tables?.forEach((table) => {
-        const tableId = sanitizeId(table?.name);
-        definition += `  ${tableId} as \"${table?.name}\" {\n`;
-        table?.columns?.forEach((col) => {
-          const colName = sanitizeId(col?.name);
-          const flags: string[] = [];
-          if (col?.isPrimary) flags.push("PK");
-          if (col?.isUnique) flags.push("UK");
-          if (col?.isNullable) flags.push("NULL");
-          definition += `    ${colName} ${col?.type}${
-            flags.length ? ` \"${flags.join(", ")}\"` : ""
-          }\n`;
-        });
-        definition += `  }\n`;
-      });
-      // Relationships
-      schema?.relationships?.forEach((rel) => {
-        const arrowMap: Record<string, string> = {
-          OneToOne: "||--||",
-          OneToMany: "||--o{",
-          ManyToOne: "o{--||",
-          ManyToMany: "o{--o{",
-        };
-        const arrow = arrowMap[rel?.type as string] || "||--||";
-        const src = sanitizeId(rel?.source);
-        const tgt = sanitizeId(rel?.target);
-        definition += `  ${src} ${arrow} ${tgt}\n`;
-      });
-    } catch (err) {
-      console.error("Error generating ER definition:", err);
-      return;
-    }
-
-    // Render via mermaid
-    const container = containerRef.current;
-    if (container) {
-      try {
-        mermaid.parse(definition);
-        const id = `er-diagram-${Math.random().toString(36).slice(2)}`;
-        mermaid
-          .render(id, definition)
-          .then(({ svg }) => {
-            container.innerHTML = svg;
-          })
-          .catch((err) => {
-            console.error("Mermaid render error:", err, definition);
-          });
-      } catch (err) {
-        console.error("Mermaid parse error:", err, definition);
-      }
-    }
+    const generated = generateERDiagram(schema);
+    setDefinition(generated);
   }, [schema]);
 
+  useEffect(() => {
+    if (!definition || !containerRef.current) return;
+    try {
+      mermaid.parse(definition);
+      const id = `er-diagram-${Math.random().toString(36).slice(2)}`;
+      mermaid.render(id, definition).then(({ svg }) => {
+        containerRef.current!.innerHTML = svg;
+      });
+    } catch (err) {
+      console.error("Mermaid render error:", err, definition);
+    }
+  }, [definition]);
+
   return (
-    <div
-      ref={containerRef}
-      className="border rounded p-4 bg-white dark:bg-neutral-900 overflow-auto"
-    />
+    <div className="border-brand-accent text-brand-text-secondary bg-brand-background rounded-md border p-4 text-sm">
+      <h3 className="text-brand-text-secondary mb-2 text-lg font-semibold">
+        Entity Relationship Diagram
+      </h3>
+      <div
+        ref={containerRef}
+        className="overflow-auto rounded bg-white p-2 dark:bg-neutral-900"
+      />
+      <div className="border-border mt-4 rounded border border-dashed bg-[--brand-background] p-3 text-xs">
+        <p className="mb-1 font-semibold text-[--brand-text-primary]">Legend</p>
+        <ul className="space-y-1">
+          <li>
+            <code>{"||--||"}</code> → One-to-One
+          </li>
+          <li>
+            <code>{"||--o("}</code> → One-to-Many
+          </li>
+          <li>
+            <code>{"o{--||"}</code> → Many-to-One
+          </li>
+          <li>
+            <code>{"o{--o{"}</code> → Many-to-Many
+          </li>
+          <li>
+            <code>PK</code> = Primary Key, <code>UK</code> = Unique,{" "}
+            <code>NULL</code> = Nullable
+          </li>
+        </ul>
+      </div>
+    </div>
   );
 }

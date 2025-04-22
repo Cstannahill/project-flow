@@ -50,6 +50,7 @@
     "@reduxjs/toolkit": "^2.6.1",
     "@scalar/api-reference": "^1.28.23",
     "@stoplight/elements": "^9.0.1",
+    "@tanstack/react-table": "^8.21.3",
     "ai": "^4.2.2",
     "assistant-ui": "^0.0.39",
     "bcrypt": "^5.1.1",

@@ -3,7 +3,7 @@ import safeStringify from "fast-safe-stringify";
 
 export function exportSchema(
   SchemaData: SchemaData,
-  format: "sql" | "prisma" | "dbml" | "json"
+  format: "sql" | "prisma" | "dbml" | "json",
 ): string {
   switch (format) {
     case "sql":
@@ -58,7 +58,7 @@ export function exportSchema(
 
     case "json":
     default:
-      return safeStringify(SchemaData.tables, null, 2);
+      return JSON.stringify(SchemaData.tables, null, 2);
   }
 }
 
