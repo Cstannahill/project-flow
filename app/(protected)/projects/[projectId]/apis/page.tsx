@@ -39,7 +39,9 @@ export default function ApiRoutesPage() {
   const status = useAppSelector((s) => selectApiRoutesStatus(s, projectId));
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRoute, setEditingRoute] = useState<ApiRoute | null>(null);
+  const [editingRoute, setEditingRoute] = useState<
+    ApiRoutePayload | ApiRouteCreatePayload | null
+  >(null);
 
   // Load routes + trigger spec rebuild on mount
   useEffect(() => {
@@ -50,7 +52,9 @@ export default function ApiRoutesPage() {
     }
   }, [dispatch, projectId, status]);
 
-  const handleSave = async (data: ApiRouteCreatePayload | ApiRoutePayload) => {
+  const handleSave = async (
+    data: ApiRouteCreatePayload | ApiRoutePayload | null,
+  ) => {
     try {
       if (editingRoute?.id) {
         // PATCH existing

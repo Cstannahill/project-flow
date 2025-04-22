@@ -134,10 +134,10 @@ export default function SideNavBarAlt() {
   ];
 
   return (
-    <SidebarProvider className="bg-background/90 fixed inset-y-0 left-0 z-40 hidden w-64 overflow-y-auto border-r backdrop-blur lg:block">
+    <SidebarProvider className="fixed inset-y-0 left-0 z-80 hidden w-64 overflow-y-auto border-r border-brand-text-secondary bg-surface backdrop-blur lg:block">
       <SidebarHeader>
         <TeamSwitcher teams={projectsList} />
-        <DashboardButton />
+        {/* <DashboardButton /> */}
       </SidebarHeader>
 
       <SidebarContent>

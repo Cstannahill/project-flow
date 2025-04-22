@@ -4,9 +4,9 @@ import { generateOpenApiSpec, RouteForSpec } from "@/lib/openapi/generator";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { projectId: string } },
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
-  const { projectId } = params;
+  const { projectId } = await params;
   console.log(`Checking for OpenAPI spec for project: ${projectId}`);
 
   // Try to fetch existing spec record
@@ -82,9 +82,9 @@ export async function GET(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { projectId: string } },
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
-  const { projectId } = params;
+  const { projectId } = await params;
 
   await prisma.apiSpec.deleteMany({ where: { projectId } });
   return NextResponse.json({ success: true });

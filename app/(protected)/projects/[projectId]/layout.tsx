@@ -5,7 +5,7 @@ import "@/app/globals.css"; // global styles for the project layout
 
 interface Props {
   children: ReactNode;
-  params: { projectId: string };
+  params: Promise<{ projectId: string }>;
 }
 
 export default async function ProjectLayout({ children, params }: Props) {

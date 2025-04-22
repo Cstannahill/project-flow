@@ -15,9 +15,9 @@ const ALLOWED: (keyof ApiRoutePayload)[] = [
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { routeId: string } },
+  { params }: { params: Promise<{ routeId: string }> },
 ) {
-  const { routeId } = params;
+  const { routeId } = await params;
   // console.log(routeId);
   let payload: Partial<ApiRoutePayload>;
 
@@ -62,9 +62,9 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { routeId: string } },
+  { params }: { params: Promise<{ routeId: string }> },
 ) {
-  const { routeId } = params;
+  const { routeId } = await params;
   console.log("Deleting route", routeId);
   try {
     await prisma.apiRoute.delete({ where: { id: routeId } });

@@ -11,19 +11,16 @@ import {
   SelectContent,
 } from "@/components/ui/select";
 import { Option } from "@/components/ui/Option";
-import safeStringify from "fast-safe-stringify";
-import JsonEditor from "./JsonEditor";
 import { Label } from "../ui/label";
 import { Editor } from "@monaco-editor/react";
 import { useAppDispatch } from "@/lib/store/hooks";
-import {
-  createApiRoute,
-  rebuildOpenApiSpec,
-  updateApiRoute,
-} from "@/lib/store/apiRoutes";
-import toast from "react-hot-toast";
 import { useProjectId } from "@/hooks/useProjectId";
-import { on } from "events";
+import { safeAccess } from "@/lib/helpers";
+import {
+  apiRouteKeys,
+  isApiRouteKey,
+  ApiRouteKey,
+} from "@/lib/apiRoutes/helpers";
 import { Button } from "../ui/button";
 import type { ApiRoutePayload } from "@/types/entities/apiRoutes";
 
@@ -67,14 +64,16 @@ export interface JsonDetailFormProps<T extends Record<string, any>> {
  * A generic form that renders a “Details” grid
  * of typed fields plus a “Raw JSON” editor
  */
-export function JsonDetailForm<T extends Record<string, any>>({
+export function JsonDetailForm<
+  T extends Record<string, any> = ApiRoutePayload,
+>({
   id = "json-detail-form",
   defaultTab = "details",
   fields,
   initialData = {} as ApiRoutePayload,
   onSubmitAction,
   className,
-}: JsonDetailFormProps<T>) {
+}: JsonDetailFormProps<ApiRoutePayload>) {
   const [tab, setTab] = useState<"details" | "json">(defaultTab);
   const [data, setData] = useState<ApiRoutePayload>(initialData);
   const dispatch = useAppDispatch();
@@ -87,8 +86,7 @@ export function JsonDetailForm<T extends Record<string, any>>({
   };
 
   async function handleSubmit() {
-    console.log("🚀 ~ data:", data);
-    onSubmitAction(data as ApiRoutePayload);
+    onSubmitAction(data);
   }
 
   return (
@@ -96,12 +94,14 @@ export function JsonDetailForm<T extends Record<string, any>>({
       <TabsContent value="details">
         <div className="grid gap-4 sm:grid-cols-2">
           {fields.map((f) => {
-            const key = f.name as string;
+            const fieldKey = f.name as string;
+            if (isApiRouteKey(fieldKey)) return null;
+            const value = safeAccess(data, fieldKey as ApiRouteKey);
             const span = f.colSpan ?? 1;
             const common = {
-              id: key,
-              name: key,
-              value: data[key] ?? "",
+              id: fieldKey,
+              name: fieldKey,
+              value: value as string,
               onChange:
                 f.type === "select"
                   ? undefined
@@ -116,15 +116,15 @@ export function JsonDetailForm<T extends Record<string, any>>({
 
             switch (f.type) {
               case "hidden":
-                return <input key={key} type="hidden" {...common} />;
+                return <input key={fieldKey} type="hidden" {...common} />;
 
               case "text":
                 return (
                   <div
-                    key={key}
+                    key={fieldKey}
                     className={`flex flex-col gap-1 ${common.className}`}
                   >
-                    {f.label && <label htmlFor={key}>{f.label}</label>}
+                    {f.label && <label htmlFor={fieldKey}>{f.label}</label>}
                     <Input {...common} />
                   </div>
                 );
@@ -132,10 +132,10 @@ export function JsonDetailForm<T extends Record<string, any>>({
               case "textarea":
                 return (
                   <div
-                    key={key}
+                    key={fieldKey}
                     className={`flex flex-col gap-1 ${common.className}`}
                   >
-                    {f.label && <label htmlFor={key}>{f.label}</label>}
+                    {f.label && <label htmlFor={fieldKey}>{f.label}</label>}
                     <Textarea {...common} rows={4} />
                   </div>
                 );
@@ -143,12 +143,12 @@ export function JsonDetailForm<T extends Record<string, any>>({
               case "select":
                 return (
                   <div
-                    key={key}
+                    key={fieldKey}
                     className={`flex w-25 flex-col gap-1 ${common.className}`}
                   >
-                    {f.label && <label htmlFor={key}>{f.label}</label>}
+                    {f.label && <label htmlFor={fieldKey}>{f.label}</label>}
                     <Select
-                      name={key}
+                      name={fieldKey}
                       value={String(data?.method ?? "")}
                       onValueChange={(val) => handleChange(f.name, val as any)}
                     >

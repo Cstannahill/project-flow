@@ -35,7 +35,7 @@ export default function ProjectTabs({ projectId }: Props) {
 
   return (
     <Tabs value={segment} className="w-full">
-      <TabsList className="flex w-3/4 mx-auto  border-b">
+      <TabsList className="mx-auto flex w-3/4  border-b">
         {navItems.map(({ value, label, href }) => (
           <TabsTrigger
             key={value}
@@ -43,7 +43,7 @@ export default function ProjectTabs({ projectId }: Props) {
             asChild
             className={cn(
               "px-2 py-1 text-sm",
-              "data-[state=active]:border-b-2 data-[state=active]:border-blue-500"
+              "data-[state=active]:border-b-2 data-[state=active]:border-[#fbcd14] data-[state=active]:bg-[#1b1916]",
             )}
           >
             <Link href={href}>{label}</Link>

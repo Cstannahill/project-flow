@@ -5,14 +5,18 @@ import { useAppDispatch } from "@/lib/store/hooks";
 import { DeleteConfirmationDialog } from "@/components/ui/dialogs/DeleteConfirmationDialog";
 import toast from "react-hot-toast";
 import { useState } from "react";
-import type { ApiRoute } from "@/types/entities/apiRoutes";
+import type {
+  ApiRoute,
+  ApiRouteCreatePayload,
+  ApiRoutePayload,
+} from "@/types/entities/apiRoutes";
 import { P } from "../ui/Typography";
 import { Button } from "../ui/button";
 
 export interface ApiRouteCardProps {
-  api: ApiRoute;
-  onEdit: (api: ApiRoute) => void;
-  onDelete?: (id: string) => void;
+  api: ApiRouteCreatePayload | ApiRoutePayload;
+  onEdit: (api: ApiRoutePayload) => void;
+  onDelete?: (id: string) => Promise<void>;
 }
 
 export default function ApiRouteCard(props: ApiRouteCardProps) {
@@ -20,7 +24,8 @@ export default function ApiRouteCard(props: ApiRouteCardProps) {
   // const [isDeleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    props.onDelete?.(api.id);
+    if (!api?.id) return;
+    props.onDelete?.(api?.id);
   };
 
   return (

@@ -108,3 +108,17 @@ export const Small = ({
     {children}
   </small>
 );
+
+export const Sub = ({
+  children,
+  className,
+}: React.PropsWithChildren<{ className?: string }>) => (
+  <sub
+    className={clsx(
+      "text-brand-muted text-xs font-medium tracking-wide",
+      className,
+    )}
+  >
+    {children}
+  </sub>
+);

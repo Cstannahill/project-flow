@@ -7,6 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 import clsx from "clsx";
 import { useAppSelector } from "@/lib/store/hooks";
 import { Button } from "@/components/ui/button";
+import { DarkModeSwitch } from "../ui/themechanging/DarkModeSwitch";
 
 const navItems = [
   { label: "Projects", href: "/dashboard" },
@@ -19,7 +20,7 @@ export default function TopNav() {
   return (
     <header
       className={clsx(
-        "bg-radial-prime text-brand z-50 flex w-full items-center justify-between px-4 py-3 text-white shadow-md",
+        "text-brand z-50 flex w-full items-center justify-between px-4 py-3 text-white shadow-md",
       )}
     >
       <nav className="hidden items-center gap-6 md:flex">
@@ -37,7 +38,7 @@ export default function TopNav() {
           </Link>
         ))}
       </nav>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 border-brand-accent bg-background">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/icons/shadytlogo/st1024-main.png"
@@ -50,8 +51,8 @@ export default function TopNav() {
         </Link>
       </div>
       <div className="hidden items-center gap-3 md:flex">
-        {/* <ThemeChanger /> */}
-        <button className="ripple btn-sm rounded bg-cyan-600 ">Click</button>
+        {/* <DarkModeSwitch /> */}
+        {/* <button className="ripple btn-sm rounded bg-cyan-600 ">Click</button> */}
         {currentUser ? (
           <LogoutButton />
         ) : (

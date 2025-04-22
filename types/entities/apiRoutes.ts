@@ -1,3 +1,5 @@
+import type { JsonValue } from "@prisma/client/runtime/library";
+
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ApiRoute = {
@@ -7,11 +9,11 @@ export type ApiRoute = {
   path: string;
   summary: string;
   description?: string;
-  params?: Record<string, any>; // For path parameters
-  query?: Record<string, any>; // For query parameters
-  body?: Record<string, any>; // For request body schema
-  responses?: Record<string, any>; // For response schema
-  openApiSpec?: string; // OpenAPI spec for the route
+  params?: Record<string, any> | JsonValue;
+  query?: Record<string, any> | JsonValue;
+  body?: Record<string, any> | JsonValue;
+  responses?: Record<string, any> | JsonValue;
+  openApiSpec?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -24,10 +26,10 @@ export interface ApiRouteCreatePayload {
   summary: string;
   description?: string;
   openApiSpec?: string;
-  params?: Record<string, any>;
-  query?: Record<string, any>;
-  body?: Record<string, any>;
-  responses?: Record<string, any>;
+  params?: Record<string, any> | JsonValue;
+  query?: Record<string, any> | JsonValue;
+  body?: Record<string, any> | JsonValue;
+  responses?: Record<string, any> | JsonValue;
 }
 export interface ApiRoutePayload {
   id?: string;
@@ -36,9 +38,10 @@ export interface ApiRoutePayload {
   method?: HttpMethod;
   summary?: string;
   description?: string;
-  params?: Record<string, any>;
-  query?: Record<string, any>;
-  body?: Record<string, any>;
-  responses?: Record<string, any>;
+  params?: Record<string, any> | JsonValue;
+  query?: Record<string, any> | JsonValue;
+  body?: Record<string, any> | JsonValue;
+  responses?: Record<string, any> | JsonValue;
   openApiSpec?: string;
+  // [key: string]: any; // Allow any other properties
 }

@@ -26,14 +26,14 @@ export const createDiagram = createAsyncThunk<
       const res = await fetch(`/api/projects/${projectId}/diagrams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: safeStringify(newDiagram, null, 2),
+        body: safeStringify(newDiagram),
       });
       if (!res.ok) throw new Error("Failed to create diagram");
       return (await res.json()) as Diagram;
     } catch (err) {
       return rejectWithValue((err as Error).message);
     }
-  }
+  },
 );
 export const updateDiagram = createAsyncThunk<
   Diagram,
@@ -44,7 +44,7 @@ export const updateDiagram = createAsyncThunk<
     const res = await fetch(`/api/diagrams/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: safeStringify(diagram, null, 2),
+      body: safeStringify(diagram),
     });
     if (!res.ok) throw new Error("Failed to update diagram");
     return (await res.json()) as Diagram;
@@ -62,7 +62,7 @@ export const deleteDiagram = createAsyncThunk<
     const res = await fetch(`/api/diagrams/${id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: safeStringify(diagram, null, 2),
+      body: safeStringify(diagram),
     });
     if (!res.ok) throw new Error("Failed to update diagram");
     return (await res.json()) as Diagram;

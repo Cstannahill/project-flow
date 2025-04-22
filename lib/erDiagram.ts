@@ -1,111 +1,60 @@
-import type {
-  SchemaData,
-  Table,
-  Column,
-  Relationship,
-  RelationshipType,
-} from "@/types/entities/databases";
+// lib/erDiagram.ts
+import type { SchemaData } from "@/types/entities/databases";
 
-interface ERDiagramOptions {
-  /** Mermaid frontmatter theme (default: dark) */
-  theme?: string;
-  /** Title shown in frontmatter */
-  title?: string;
+function sanitizeId(str: string = ""): string {
+  let s = str.replace(/[^A-Za-z0-9_]/g, "_");
+  if (/^[0-9]/.test(s)) s = `_${s}`;
+  return s;
 }
 
 /**
- * Replace any non‑word characters with underscore,
- * so Mermaid identifiers never break.
+ * Generates a Mermaid ER diagram definition from schema data.
  */
-function sanitizeId(raw: string): string {
-  return raw.trim().replace(/[^\w]/g, "_");
-}
+export function generateERDiagram(schema: SchemaData): string {
+  let diagram = `erDiagram\n`;
 
-/**
- * Turn a single Column into its ERD line:
- *    name TYPE "PK,UK"
- */
-function formatColumn(col: Column): string {
-  const name = sanitizeId(col.name);
-  const type = sanitizeId(col.type);
-  const flags = [
-    col.isPrimary ? "PK" : null,
-    col.isUnique ? "UK" : null,
-    col.isNullable ? "NULL" : null,
-  ].filter(Boolean);
+  // Tables
+  for (const table of schema.tables) {
+    const tableId = sanitizeId(table.name);
+    diagram += `  ${tableId} as \"${table.name}\" {\n`;
 
-  return flags.length
-    ? `${name} ${type} "${flags.join(",")}"`
-    : `${name} ${type}`;
-}
-
-/** Map our RelationshipType to Mermaid arrow syntax */
-function arrowFor(rel: RelationshipType): string {
-  switch (rel) {
-    case "OneToOne":
-      return "||--||";
-    case "OneToMany":
-      return "||--o{";
-    case "ManyToOne":
-      return "}o--||";
-    case "ManyToMany":
-      return "}o--o{";
-    default:
-      console.warn(`Unknown relationship type: ${rel}`);
-      return "--";
-  }
-}
-
-/**
- * Main generator. Returns full Mermaid ER diagram (with YAML frontmatter).
- */
-export function generateERDiagram(
-  schema: SchemaData,
-  opts: ERDiagramOptions = {}
-): string {
-  const theme = opts.theme ?? "dark";
-  const title = opts.title ?? "Entity Relationship Diagram";
-
-  // Build frontmatter once
-  const frontmatter = [
-    `---`,
-    `title: "${title.replace(/"/g, '\\"')}"`,
-    `config:`,
-    `  theme: "${theme}"`,
-    `---`,
-    ``,
-  ];
-
-  // Gather lines
-  const lines: string[] = ["erDiagram"];
-
-  // -- Tables
-  for (const tbl of schema.tables ?? []) {
-    if (!tbl.name || !Array.isArray(tbl.columns)) continue;
-    const tableId = sanitizeId(tbl.name);
-    lines.push(`  ${tableId} {`);
-    for (const col of tbl.columns) {
-      if (!col.name || !col.type) continue;
-      lines.push(`    ${formatColumn(col)}`);
+    for (const col of table.columns) {
+      const colId = sanitizeId(col.name);
+      const flags = [];
+      if (col.isPrimary) flags.push("PK");
+      if (col.isUnique) flags.push("UK");
+      if (col.isNullable) flags.push("NULL");
+      diagram += `    ${colId} ${col.type}${
+        flags.length ? ` \"${flags.join(", ")}\"` : ""
+      }\n`;
     }
-    lines.push(`  }`);
+
+    diagram += `  }\n`;
   }
 
-  // -- Relationships
-  for (const rel of schema.relationships ?? []) {
-    if (!rel.fromTable || !rel.toTable) continue;
+  // Relationships
+  const arrowMap: Record<string, string> = {
+    OneToOne: "||--||",
+    OneToMany: "||--o{",
+    ManyToOne: "o{--||",
+    ManyToMany: "o{--o{",
+  };
+
+  for (const rel of schema.relationships) {
     const from = sanitizeId(rel.fromTable);
     const to = sanitizeId(rel.toTable);
-    const arrow = arrowFor(rel.type as RelationshipType);
-    let label = "";
-    if (rel.fromColumn && rel.toColumn) {
-      // escape any quotes
-      const left = sanitizeId(rel.fromColumn);
-      const right = sanitizeId(rel.toColumn);
-      label = ` : "${left}→${right}"`;
-    }
-    lines.push(`  ${from} ${arrow} ${to}${label}`);
+    const arrow = arrowMap[rel.type] || "||--||";
+    const label = `${rel.fromColumn} → ${rel.toColumn}`;
+    diagram += `  ${from} ${arrow} ${to} : \"${label}\"\n`;
   }
 
-  return [...frontmatter, ...lines].join("\n");
+  // Legend block
+  diagram += `\n  %% Legend\n`;
+  diagram += `  %% ||--||  One to One\n`;
+  diagram += `  %% ||--o{  One to Many\n`;
+  diagram += `  %% o{--||  Many to One\n`;
+  diagram += `  %% o{--o{  Many to Many\n`;
+  diagram += `  %% PK = Primary Key, UK = Unique, NULL = Nullable\n`;
+
+  return diagram;
 }

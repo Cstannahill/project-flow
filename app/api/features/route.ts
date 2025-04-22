@@ -6,14 +6,14 @@ import prisma from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { projectId } = params;
+  const { projectId } = await params;
   const features = await prisma.feature.findMany({
     where: { projectId },
     orderBy: { createdAt: "asc" },
@@ -24,14 +24,14 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> },
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { projectId } = params;
+  const { projectId } = await params;
   const body = await request.json();
   const { title, description, type, status, tags } = body;
 
@@ -39,7 +39,7 @@ export async function POST(
   if (!title || !type) {
     return NextResponse.json(
       { error: "`title` and `type` are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -49,6 +49,7 @@ export async function POST(
         title,
         description,
         type,
+        order: 0,
         status,
         tags,
         project: { connect: { id: projectId } },
@@ -59,7 +60,7 @@ export async function POST(
     console.error("Error creating feature:", err);
     return NextResponse.json(
       { error: "Failed to create feature" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
