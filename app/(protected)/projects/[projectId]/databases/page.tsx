@@ -95,11 +95,8 @@ export default function DatabaseTab() {
     );
   };
 
-  const onFileDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  const handleFileUpload = async (file: File) => {
     setDropError(null);
-    const file = e.dataTransfer?.files?.[0];
-    if (!file) return;
     try {
       const parsed = await parseUploadedSchema(file);
       if (parsed?.tables?.length === 0)
@@ -322,7 +319,7 @@ export default function DatabaseTab() {
     onSaveNewSchema: saveNewSchema,
   };
   const dropzoneProps = {
-    onFileDrop,
+    onFileDrop: handleFileUpload,
     dropError,
     schemas,
     selectedSchemaId,
