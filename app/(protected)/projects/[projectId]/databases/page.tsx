@@ -194,6 +194,13 @@ export default function DatabaseTab() {
     setSelectedSchemaId(id);
   };
 
+  const handleNewSchema = () => {
+    const empty = { tables: [], relationships: [] } as SchemaData;
+    setSchema(empty);
+    setRenderSchema(empty);
+    setSelectedSchemaId(null);
+  };
+
   const handleExport = () => {
     const output = exportSchema(schema, exportFormat);
     saveAs(
@@ -320,6 +327,7 @@ export default function DatabaseTab() {
     schemas,
     selectedSchemaId,
     onLoadSchema: handleLoadSchema,
+    onNewSchema: handleNewSchema,
   };
   const tableListProps = {
     tables: schema?.tables,

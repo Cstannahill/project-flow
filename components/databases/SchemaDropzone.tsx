@@ -6,6 +6,8 @@ interface Props {
   schemas: Array<{ id: string; title: string }>;
   selectedSchemaId: string | null;
   onLoadSchema: (id: string) => void;
+  /** Triggered when the user selects to start a new schema */
+  onNewSchema: () => void;
 }
 
 export default function SchemaDropzone({
@@ -14,6 +16,7 @@ export default function SchemaDropzone({
   schemas,
   selectedSchemaId,
   onLoadSchema,
+  onNewSchema,
 }: Props) {
   return (
     <>
@@ -29,10 +32,18 @@ export default function SchemaDropzone({
 
         <select
           value={selectedSchemaId || ""}
-          onChange={(e) => onLoadSchema(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val === "__new__") {
+              onNewSchema();
+            } else {
+              onLoadSchema(val);
+            }
+          }}
           className="border px-2 py-1 rounded"
         >
           <option value="">— Load Schema —</option>
+          <option value="__new__">New Schema</option>
           {schemas.map((s) => (
             <option key={s.id} value={s.id}>
               {s.title}
