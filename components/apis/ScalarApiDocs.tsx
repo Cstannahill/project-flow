@@ -1,37 +1,30 @@
-// components/ScalarApiDocs.tsx
+// components/ApiDocs.tsx
 "use client";
 
-// Pull in the styles scoped to this component
-import "@scalar/api-reference/dist/style.css";
+import { RedocStandalone } from "redoc";
 
-import dynamic from "next/dynamic";
-
-// Dynamically register the web component on the client only
-const LoadScalar = dynamic(
-  () => import("@scalar/api-reference").then(() => () => null),
-  { ssr: false },
-);
-
-interface ScalarApiDocsProps {
+interface ApiDocsProps {
   specUrl: string;
-  proxyUrl?: string;
-  theme?: string;
+  theme?: "light" | "dark";
 }
 
-export function ScalarApiDocs({
-  specUrl,
-  proxyUrl = "https://proxy.scalar.com",
-  theme = "default",
-}: ScalarApiDocsProps) {
+export function ScalarApiDocs({ specUrl, theme = "light" }: ApiDocsProps) {
   return (
-    <>
-      <LoadScalar />
-      <api-reference
-        data-url={specUrl}
-        data-proxy-url={proxyUrl}
-        data-configuration={JSON.stringify({ theme })}
-        style={{ width: "100%", height: "90vh" }}
+    <div style={{ width: "100%", height: "90vh" }}>
+      <RedocStandalone
+        specUrl={specUrl}
+        options={{
+          theme: {
+            colors: {
+              primary: {
+                main: theme === "dark" ? "#ffffff" : "#000000",
+              },
+            },
+          },
+          nativeScrollbars: false,
+          scrollYOffset: 0,
+        }}
       />
-    </>
+    </div>
   );
 }
