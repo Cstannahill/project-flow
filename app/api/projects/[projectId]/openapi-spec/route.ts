@@ -34,10 +34,8 @@ export async function GET(
         { error: "No API routes found for this project." },
         { status: 404 },
       );
-    }
-
-    // Sanitize JSON fields to ensure object shape
-    const sanitizedRoutes: RouteForSpec[] = apiRoutes.map((r) => ({
+    } // Sanitize JSON fields to ensure object shape
+    const sanitizedRoutes: RouteForSpec[] = apiRoutes.map((r: any) => ({
       path: r.path,
       method: r.method,
       summary: r.summary || "",

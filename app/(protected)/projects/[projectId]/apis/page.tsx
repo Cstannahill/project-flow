@@ -26,7 +26,6 @@ import { P } from "@/components/ui/Typography";
 import ApiRouteCard from "@/components/apis/ApiRouteCard";
 import ApiRouteDialog from "@/components/ui/modals/ApiRouteDialogue";
 import { Button } from "@/components/ui/button";
-import { ApiDocs } from "@/components/apis/ApiDocs";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ApiRoutesPage() {

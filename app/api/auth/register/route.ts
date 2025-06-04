@@ -1,5 +1,5 @@
 import prisma from "../../../../lib/prisma";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -20,6 +20,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     { message: "User created", userId: user.id },
-    { status: 201 }
+    { status: 201 },
   );
 }
