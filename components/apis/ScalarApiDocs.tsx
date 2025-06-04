@@ -1,10 +1,16 @@
 // components/ScalarApiDocs.tsx
 "use client";
 
-// 1) pull in the styles so they scope only to the component
-// import "@scalar/api-reference/style.css";
-// 2) register the custom element
-import "@scalar/api-reference";
+// Pull in the styles scoped to this component
+import "@scalar/api-reference/dist/style.css";
+
+import dynamic from "next/dynamic";
+
+// Dynamically register the web component on the client only
+const LoadScalar = dynamic(
+  () => import("@scalar/api-reference").then(() => () => null),
+  { ssr: false },
+);
 
 interface ScalarApiDocsProps {
   specUrl: string;
@@ -17,13 +23,15 @@ export function ScalarApiDocs({
   proxyUrl = "https://proxy.scalar.com",
   theme = "default",
 }: ScalarApiDocsProps) {
-  console.log(specUrl);
   return (
-    <api-reference
-      data-url={specUrl}
-      data-proxy-url={proxyUrl}
-      data-configuration={JSON.stringify({ theme })}
-      style={{ width: "100%", height: "90vh" }}
-    />
+    <>
+      <LoadScalar />
+      <api-reference
+        data-url={specUrl}
+        data-proxy-url={proxyUrl}
+        data-configuration={JSON.stringify({ theme })}
+        style={{ width: "100%", height: "90vh" }}
+      />
+    </>
   );
 }
