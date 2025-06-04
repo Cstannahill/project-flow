@@ -68,6 +68,20 @@ export default function ERDiagramView({ schema }: ERDiagramViewProps) {
             <code>PK</code> = Primary Key, <code>UK</code> = Unique,{" "}
             <code>NULL</code> = Nullable
           </li>
+          {schema.relationships?.length ? (
+            <>
+              <li className="pt-2 font-semibold text-[--brand-text-primary]">
+                Relationships
+              </li>
+              {schema.relationships.map((r, idx) => (
+                <li key={idx} className="ml-2">
+                  <code>
+                    {r.fromTable}.{r.fromColumn} → {r.toTable}.{r.toColumn}
+                  </code>
+                </li>
+              ))}
+            </>
+          ) : null}
         </ul>
       </div>
     </div>

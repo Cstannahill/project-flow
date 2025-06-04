@@ -28,8 +28,12 @@ export function parseSQLSchema(sql: string): SchemaData {
       if (fkMatch) {
         const [, fromColumn, toTable, toColumn] = fkMatch;
         relationships.push({
-          source: fromColumn,
-          target: toColumn,
+          fromTable: tableName,
+          toTable,
+          fromColumn,
+          toColumn,
+          source: tableName,
+          target: toTable,
           type: "OneToMany",
         });
         return;
@@ -93,9 +97,12 @@ export function parsePrismaSchema(prisma: string): SchemaData {
           const toColumn = referencesMatch[1];
 
           relationships.push({
+            fromTable: modelName,
+            toTable: referencedModel,
+            fromColumn,
+            toColumn,
             source: modelName,
             target: referencedModel,
-
             type: "OneToMany",
           });
         }
@@ -155,6 +162,10 @@ export function parseDbmlSchema(dbml: string): SchemaData {
   while ((match = refRegex.exec(dbml)) !== null) {
     const [, fromTable, fromColumn, toTable, toColumn] = match;
     relationships.push({
+      fromTable,
+      toTable,
+      fromColumn,
+      toColumn,
       source: fromTable,
       target: toTable,
       type: "OneToMany",
