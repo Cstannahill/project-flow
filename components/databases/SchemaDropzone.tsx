@@ -1,7 +1,7 @@
 import { P } from "../ui/Typography";
 
 interface Props {
-  onFileDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onFileDrop: (file: File) => void;
   dropError: string | null;
   schemas: Array<{ id: string; title: string }>;
   selectedSchemaId: string | null;
@@ -18,17 +18,43 @@ export default function SchemaDropzone({
   onLoadSchema,
   onNewSchema,
 }: Props) {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file) onFileDrop(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onFileDrop(file);
+    e.target.value = ""; // allow re-uploading same file
+  };
+
   return (
     <>
       <div
         className="flex justify-between items-center flex-wrap gap-4 border-2 border-dashed border-blue-300 rounded p-5 w-full"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={onFileDrop}
+        onDrop={handleDrop}
       >
         <h2 className="text-lg font-semibold">Database Schema</h2>
         <small className="text-gray-500">
           Drag a file to upload (.sql, .prisma, .dbml, .json)
         </small>
+
+        <input
+          id="schema-file-input"
+          type="file"
+          accept=".sql,.prisma,.dbml,.json"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <label
+          htmlFor="schema-file-input"
+          className="cursor-pointer rounded border px-2 py-1"
+        >
+          Choose File
+        </label>
 
         <select
           value={selectedSchemaId || ""}

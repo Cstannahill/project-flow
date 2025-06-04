@@ -20,8 +20,14 @@ export default function ERDiagramView({ schema }: ERDiagramViewProps) {
   const [definition, setDefinition] = useState<string | null>(null);
 
   useEffect(() => {
-    // Guard: need at least one table with a named column
-    if (!schema?.tables?.length || !schema.tables[0]?.columns?.length) return;
+    // Guard: need at least one table with columns. If none, clear the diagram.
+    if (
+      !schema?.tables?.length ||
+      !schema.tables.some((t) => t?.columns?.length)
+    ) {
+      setDefinition(null);
+      return;
+    }
 
     const generated = generateERDiagram(schema);
     setDefinition(generated);
