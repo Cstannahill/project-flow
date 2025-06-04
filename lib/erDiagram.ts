@@ -56,5 +56,19 @@ export function generateERDiagram(schema: SchemaData): string {
   diagram += `  %% o{--o{  Many to Many\n`;
   diagram += `  %% PK = Primary Key, UK = Unique, NULL = Nullable\n`;
 
+  if (schema.relationships?.length) {
+    diagram += `  %% Relationships\n`;
+    for (const rel of schema.relationships) {
+      if (
+        rel.fromTable &&
+        rel.fromColumn &&
+        rel.toTable &&
+        rel.toColumn
+      ) {
+        diagram += `  %% ${rel.fromTable}.${rel.fromColumn} -> ${rel.toTable}.${rel.toColumn}\n`;
+      }
+    }
+  }
+
   return diagram;
 }
