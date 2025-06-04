@@ -23,10 +23,10 @@ import type {
 import { useProjectId } from "@/hooks/useProjectId";
 import { Loading } from "@/components/ui/Loading";
 import { P } from "@/components/ui/Typography";
-import ApiRouteCard from "@/components/apis/ApiRouteCard";
 import ApiRouteDialog from "@/components/ui/modals/ApiRouteDialogue";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Edit, Trash } from "lucide-react";
 
 export default function ApiRoutesPage() {
   const dispatch = useAppDispatch();
@@ -108,19 +108,37 @@ export default function ApiRoutesPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4">
+      <ul className="mb-6 space-y-2">
         {apiRoutes.map((route) => (
-          <ApiRouteCard
+          <li
             key={route.id}
-            api={route}
-            onEdit={() => {
-              setEditingRoute(route);
-              setDialogOpen(true);
-            }}
-            onDelete={handleDelete}
-          />
+            className="flex items-center justify-between rounded-md border p-2"
+          >
+            <span className="font-mono text-sm">
+              <strong>{route.method}</strong> {route.path}
+            </span>
+            <span className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setEditingRoute(route);
+                  setDialogOpen(true);
+                }}
+              >
+                <Edit size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(route.id!)}
+              >
+                <Trash size={16} />
+              </Button>
+            </span>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <ApiRouteDialog
         open={dialogOpen}
